@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
+import csv
 
 # https://stackoverflow.com/questions/53573670/animated-charts-in-pyqtgraph
 
@@ -57,8 +58,14 @@ class TimeLine(QtCore.QObject):
 
 
 class Gui(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self, file):
         super().__init__()
+        self._file = file
+        self.data = []
+        with open(file) as datafile:
+            reader = csv.reader(datafile, delimiter=',')
+            for row in reader:
+                self.data.append(float(row[-1]))
         self.setupUI()
 
     def setupUI(self):
@@ -70,9 +77,9 @@ class Gui(QtWidgets.QWidget):
         widget_layout = QtWidgets.QVBoxLayout(self)
         widget_layout.addWidget(self.plot)
 
-        self._plots = [self.plot.plot([], [], pen=pg.mkPen(color=color, width=2)) for color in ("g", "r", "y")]
+        self._plots = [self.plot.plot([], [], pen=pg.mkPen(color=color, width=2)) for color in ("g", "r")]
         self._timeline = TimeLine(loopCount=0, interval=10)
-        self._timeline.setFrameRange(0, 720)
+        self._timeline.setFrameRange(0, 1001)
         self._timeline.frameChanged.connect(self.generate_data)
         self._timeline.start()
 
@@ -82,16 +89,19 @@ class Gui(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(int)
     def generate_data(self, i):
-        ang = np.arange(i, i + 720)
+        ang = np.arange(i, i + 1001)
         cos_func = np.cos(np.radians(ang)) 
-        sin_func = np.sin(np.radians(ang))
-        tan_func = sin_func/cos_func
-        tan_func[(tan_func < -3) | (tan_func > 3)] = np.NaN
-        self.plot_data([sin_func, cos_func, tan_func])
+        sin_func = [self.data[a % 1001] for a in ang]
+        # print(sin_func)
+        # tan_func = sin_func/cos_func
+        # tan_func[(tan_func < -3) | (tan_func > 3)] = np.NaN
+        # self.plot_data([sin_func, cos_func, tan_func])
+        self.plot_data([sin_func, cos_func])
 
 if __name__ == '__main__':
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    gui = Gui()
+    gui = Gui("src/sin.csv")
     gui.show()
+    print(gui.data)
     sys.exit(app.exec_())
