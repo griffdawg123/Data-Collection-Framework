@@ -6,6 +6,14 @@ import csv
 # https://stackoverflow.com/questions/53573670/animated-charts-in-pyqtgraph
 
 class TimeLine(QtCore.QObject):
+    """QObject 
+
+    Args:
+        QtCore (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """    
     frameChanged = QtCore.pyqtSignal(int)
 
     def __init__(self, interval=60, loopCount=1, parent=None):
@@ -16,7 +24,7 @@ class TimeLine(QtCore.QObject):
         self._timer = QtCore.QTimer(self, timeout=self.on_timeout)
         self._counter = 0
         self._loop_counter = 0
-        self.setInterval(interval)
+        self.set_interval(interval)
 
     def on_timeout(self):
         if self._startFrame <= self._counter < self._endFrame:
@@ -38,7 +46,7 @@ class TimeLine(QtCore.QObject):
 
     interval = QtCore.pyqtProperty(int, fget=loopCount, fset=setLoopCount)
 
-    def setInterval(self, interval):
+    def set_interval(self, interval):
         self._timer.setInterval(interval)
 
     def interval(self):
@@ -103,5 +111,5 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     gui = Gui("src/sin.csv")
     gui.show()
-    print(gui.data)
+    # print(gui.data)
     sys.exit(app.exec_())
