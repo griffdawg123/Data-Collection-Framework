@@ -1,10 +1,12 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QLabel, QWidget
+from windows.landing_page import Landing
 
-app = QApplication([])
+def main(argv: list[str]):
+    app = QApplication(argv)
+    window = Landing()
+    window.show()
+    sys.exit(app.exec())
 
-window = QWidget()
-window.setWindowTitle("PyQt App")
-window.setGeometry(100, 100, 280, 80)
-helloMsg = QLabel("<h1>Hello, World!</h1>", parent=window)
-helloMsg.move(60, 15)
+if __name__=="__main__":
+    main(sys.argv)
