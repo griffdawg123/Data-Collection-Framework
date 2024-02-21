@@ -1,5 +1,5 @@
 ./logs/*
 venv/
-config/devices/
-config/workspaces/
-logs/
+config/devices/*
+config/workspaces/*
+logs/*
