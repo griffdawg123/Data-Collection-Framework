@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QDialog
 import logging
 import json
 from windows.new_config import NewConfig
+import helpers
 
 class Landing(QWidget):
     def __init__(self, logger: logging.Logger) -> None:
@@ -13,7 +14,7 @@ class Landing(QWidget):
     def init_gui(self) -> None:
         self.setWindowTitle("Data Collection Framework")
         self.resize(720, 540)
-        self.center()
+        helpers.center(self)
 
         self.new_button = QPushButton(parent=self, text="New Workspace")
         self.new_button.setFixedSize(250, 75)
@@ -32,26 +33,18 @@ class Landing(QWidget):
         self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setLayout(self.layout)
 
-    def center(self) -> None:
-        screen_rect = self.frameGeometry()
-        screen_geometry = self.screen().availableGeometry()
-        centre_point = screen_geometry.center()
-        screen_rect.moveCenter(centre_point)
-        self.move(screen_rect.topLeft())
-
-
     def new_clicked(self):
         self.logger.debug("New Workspace Button Clicked")
 
         new_workspace_dialogue = NewConfig()
-        if new_workspace_dialogue.exec():
+        success, new_workspace_filename = new_workspace_dialogue.get_file_name()
+        if success:
             self.logger.info("New Workspace Successful")
-            workspace_name = "new_config"
-            with open("config/workspaces/newfile.json", "w+") as new_file:
+            with open(f"config/workspaces/{new_workspace_filename}.config", "w+") as new_file:
                 json_config = {}
-                json_config["name"] = workspace_name
+                json_config["name"] = new_workspace_filename
                 new_file.write(json.dumps(json_config))
-            self.logger.info(f"New workspace created with name: {workspace_name}")
+            self.logger.info(f"New workspace created with name: {new_workspace_filename}")
         else:
             self.logger.info("New Workspace Canceled")
         
