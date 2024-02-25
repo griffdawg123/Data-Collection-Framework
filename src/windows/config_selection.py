@@ -1,15 +1,18 @@
+from typing import Callable
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QDialog
+from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QDialog, QFileDialog
 import logging
 import json
 from windows.new_config import NewConfig
+from windows.load_config import LoadConfig
 import helpers
 
-class Landing(QWidget):
-    def __init__(self, logger: logging.Logger) -> None:
+class ConfigSelection(QWidget):
+    def __init__(self, logger: logging.Logger, set_config_path: Callable[[str], None]) -> None:
         super().__init__()
         self.logger = logger
         self.init_gui()
+        self.set_config_func = set_config_path
 
     def init_gui(self) -> None:
         self.setWindowTitle("Data Collection Framework")
@@ -45,8 +48,16 @@ class Landing(QWidget):
                 json_config["name"] = new_workspace_filename
                 new_file.write(json.dumps(json_config))
             self.logger.info(f"New workspace created with name: {new_workspace_filename}")
+            self.config_url = f"config/workspaces/{new_workspace_filename}.config"
+            self.set_config_func(self.config_url)
+            self.close()
         else:
             self.logger.info("New Workspace Canceled")
         
     def load_clicked(self):
         self.logger.info("Workspace Config Loaded")
+        config_name, _ = QFileDialog.getOpenFileName(self,self.tr("Open Config"), "./config/workspaces/", self.tr("Config Files (*.config)"))
+        if config_name:
+            self.config_url = f"config/workspaces/{config_name.split("/")[-1]}"
+            self.set_config_func(self.config_url)
+            self.close()

@@ -46,8 +46,7 @@ class NewConfig(QDialog):
             self.toggle_ok(False)
 
     def get_file_name(self) -> tuple[bool, str]:
-        created = self.exec()
-        return (created, helpers.format_config_name(self.text))
+        return (self.exec(), helpers.format_config_name(self.text))
     
     def toggle_ok(self, enabled: bool) -> None:
         self.button_box.button(QDialogButtonBox.StandardButton.Ok).setEnabled(enabled)
