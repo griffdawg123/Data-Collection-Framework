@@ -64,7 +64,7 @@ async def uart_terminal():
         print("received:", data)
 
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
-        # await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
+        await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
 
         print("Connected, start typing and press ENTER...")
 
