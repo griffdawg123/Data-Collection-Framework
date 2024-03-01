@@ -1,6 +1,6 @@
 from typing import Callable
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QDialog, QFileDialog
+from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QFileDialog
 import logging
 import json
 from windows.new_config import NewConfig
