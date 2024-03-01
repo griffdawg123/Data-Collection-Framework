@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets
 import pyqtgraph as pg
 import numpy as np
 import csv
@@ -21,7 +21,8 @@ class TimeLine(QtCore.QObject):
         self._startFrame = 0
         self._endFrame = 0
         self._loopCount = loopCount
-        self._timer = QtCore.QTimer(self, timeout=self.on_timeout)
+        self._timer = QtCore.QTimer(self)
+        self._timer.timeout.connect(self.on_timeout)
         self._counter = 0
         self._loop_counter = 0
         self.set_interval(interval)
@@ -43,8 +44,8 @@ class TimeLine(QtCore.QObject):
 
     def loopCount(self):
         return self._loopCount
-
-    interval = QtCore.pyqtProperty(int, fget=loopCount, fset=setLoopCount)
+    
+    interval:property = property(fget=loopCount, fset=setLoopCount)
 
     def set_interval(self, interval):
         self._timer.setInterval(interval)
@@ -52,7 +53,7 @@ class TimeLine(QtCore.QObject):
     def interval(self):
         return self._timer.interval()
 
-    interval = QtCore.pyqtProperty(int, fget=interval, fset=setInterval)
+    interval:property = property(fget=interval, fset=setInterval)
 
     def setFrameRange(self, startFrame, endFrame):
         self._startFrame = startFrame
