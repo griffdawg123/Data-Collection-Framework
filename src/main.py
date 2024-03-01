@@ -1,6 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QLabel, QWidget
-from windows.config_selection import ConfigSelection
+from PyQt6.QtWidgets import QApplication
 from windows.workspace import Workspace
 import logging
 import time
