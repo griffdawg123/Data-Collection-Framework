@@ -1,1 +1,7 @@
-venv/
+venv/*
+config/devices/*
+config/workspaces/*
+!config/devices
+!config/workspaces
+logs/*
+!logs
