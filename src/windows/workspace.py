@@ -12,7 +12,7 @@ path = Path(myDir)
 a=str(path.parent.absolute())
 sys.path.append(a)
 from src.widgets.data_plot import DataPlot
-from src.ble.sin_generator import get_sin
+from src.ble.static_generators import get_random, get_sin
 
 from windows.config_selection import ConfigSelection
 
@@ -44,12 +44,14 @@ class Workspace(QWidget):
         self.setup_column.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.setup_column.setStyleSheet("border: 1px solid black;")
 
-        self.graphs: DataPlot = DataPlot(get_sin(), y_max=1, y_min=-1, datarate=100)
+        self.sin_graph: DataPlot = DataPlot(get_sin(), y_max=1, y_min=-1, datarate=100)
+        self.rand_graph: DataPlot = DataPlot(get_random(), y_min=0, y_max=1)
 
         self.layout: QGridLayout = QGridLayout()
         self.layout.addWidget(self.title, 0, 0, 1, 4)
-        self.layout.addWidget(self.setup_column, 1, 0, 9, 1)
-        self.layout.addWidget(self.graphs, 1, 1, 9, 3)
+        self.layout.addWidget(self.setup_column, 1, 0, 10, 1)
+        self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
+        self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
         self.setLayout(self.layout)
 
     def load_config(self) -> None:
