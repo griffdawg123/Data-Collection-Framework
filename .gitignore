@@ -5,3 +5,4 @@ config/workspaces/*
 !config/workspaces
 logs/*
 !logs
+__pychache__/
