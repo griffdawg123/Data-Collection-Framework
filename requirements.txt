@@ -35,11 +35,3 @@ stack-data==0.6.3
 tornado==6.4
 traitlets==5.14.1
 wcwidth==0.2.13
-winrt-runtime==2.0.0b1
-winrt-Windows.Devices.Bluetooth==2.0.0b1
-winrt-Windows.Devices.Bluetooth.Advertisement==2.0.0b1
-winrt-Windows.Devices.Bluetooth.GenericAttributeProfile==2.0.0b1
-winrt-Windows.Devices.Enumeration==2.0.0b1
-winrt-Windows.Foundation==2.0.0b1
-winrt-Windows.Foundation.Collections==2.0.0b1
-winrt-Windows.Storage.Streams==2.0.0b1
