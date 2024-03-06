@@ -5,4 +5,4 @@ config/workspaces/*
 !config/workspaces
 logs/*
 !logs
-__pychache__/
+__pycache__/
