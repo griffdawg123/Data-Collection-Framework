@@ -45,13 +45,13 @@ class Workspace(QWidget):
         self.setup_column.setStyleSheet("border: 1px solid black;")
 
         self.sin_graph: DataPlot = DataPlot(get_sin(), y_max=1, y_min=-1, datarate=100)
-        self.rand_graph: DataPlot = DataPlot(get_random(), y_min=0, y_max=1)
+        # self.rand_graph: DataPlot = DataPlot(get_random(), y_min=0, y_max=1)
 
         self.layout: QGridLayout = QGridLayout()
         self.layout.addWidget(self.title, 0, 0, 1, 4)
         self.layout.addWidget(self.setup_column, 1, 0, 10, 1)
         self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
-        self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
+        # self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
         self.setLayout(self.layout)
 
     def load_config(self) -> None:
