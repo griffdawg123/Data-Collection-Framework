@@ -1,9 +1,20 @@
+import time
 from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import QTimer, pyqtSignal, pyqtSlot
-from typing import Generator, List, Any, NoReturn
+from PyQt6.QtCore import QTimer, pyqtSignal, pyqtSlot, QThread
+from typing import Generator, List, Any, NoReturn, Tuple
 from queue import Queue
 import pyqtgraph as pg
 from itertools import islice
+import os
+import sys
+
+myDir = os.getcwd()
+sys.path.append(myDir)
+from pathlib import Path
+path = Path(myDir)
+a=str(path.parent.absolute())
+sys.path.append(a)
+from src.ble.threads import DataThread
 
 class DataPlot(pg.PlotWidget):
 
@@ -21,6 +32,7 @@ class DataPlot(pg.PlotWidget):
         self.timer.setInterval(int(1000/datarate))
         self.timer.timeout.connect(self.on_timeout)
         self.data = Queue()
+        self.start_time = time.time()
         self.source = source
         self.num_data_points = num_data_points
         [self.data.put(0) for _ in range(self.num_data_points)]
@@ -44,14 +56,16 @@ class DataPlot(pg.PlotWidget):
         p_item = self.getPlotItem()
         if p_item is not None:
             self.plot = p_item.plot([], [], pen=pg.mkPen("r", width=2))
-        self.frame_changed.connect(self.generate_data)
+        self.frame_changed.connect(self.generate_data) # on frame change, call get value function
         self.start()
-
-    def plot_data(self, data):
-        self.plot.setData(range(len(data)), data)
 
     @pyqtSlot(int)
     def generate_data(self, i):
         self.data.put(next(self.source))
-        self.plot_data(self.data.queue)
-        self.data.get()
+        self.plot_data(range(len(self.data.queue)), self.data.queue)
+        while len(self.data.queue) > 100:
+            self.data.get()
+
+    def plot_data(self, spaces, data):
+        self.plot.setData(spaces, data)
+    

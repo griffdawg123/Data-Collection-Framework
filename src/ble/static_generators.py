@@ -7,10 +7,12 @@ import random
 
 def get_sin() -> Generator[float, None, None]:
     while True:
-        yield math.sin(10*time.time())
+        time.sleep(0.01)
+        yield math.sin(time.time())
 
 def get_random() -> Generator[float, None, None]:
     while True:
+        time.sleep(0.01)
         yield random.random()
 
 if __name__ == "__main__":

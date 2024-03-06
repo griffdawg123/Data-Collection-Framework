@@ -1,10 +1,11 @@
 from logging import Logger
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QGridLayout
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QThread
 import json
 import string
 import sys
 import os
+
 myDir = os.getcwd()
 sys.path.append(myDir)
 from pathlib import Path
@@ -13,7 +14,7 @@ a=str(path.parent.absolute())
 sys.path.append(a)
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import get_random, get_sin
-
+from src.ble.threads import DataThread
 from windows.config_selection import ConfigSelection
 
 class Workspace(QWidget):
@@ -24,6 +25,7 @@ class Workspace(QWidget):
         self.logger = logger
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
+        # self.data_thread = QThread()
 
     def read_config(self, config_path: str) -> None:
         with open(config_path, "r") as infile:
@@ -43,15 +45,14 @@ class Workspace(QWidget):
         self.setup_column.setText("Setup Column")
         self.setup_column.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.setup_column.setStyleSheet("border: 1px solid black;")
-
-        self.sin_graph: DataPlot = DataPlot(get_sin(), y_max=1, y_min=-1, datarate=100)
-        # self.rand_graph: DataPlot = DataPlot(get_random(), y_min=0, y_max=1)
+        self.sin_graph: DataPlot = DataPlot(get_sin(), y_max=1, y_min=-1, datarate=50)
+        self.rand_graph: DataPlot = DataPlot(get_random(), y_min=0, y_max=1, datarate=50)
 
         self.layout: QGridLayout = QGridLayout()
         self.layout.addWidget(self.title, 0, 0, 1, 4)
         self.layout.addWidget(self.setup_column, 1, 0, 10, 1)
         self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
-        # self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
+        self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
         self.setLayout(self.layout)
 
     def load_config(self) -> None:
