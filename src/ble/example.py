@@ -1,6 +1,5 @@
 import asyncio
 from bleak import BleakClient
-from argparse import ArgumentParser
 import numpy as np
 from numpy import uint8
 

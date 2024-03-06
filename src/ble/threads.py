@@ -1,18 +1,17 @@
 # https://anandology.com/blog/using-iterators-and-generators/
-from typing import Generator, Any, Iterator
-import threading
-from PyQt6.QtCore import QThread, pyqtSignal, QRunnable
+from abc import abstractmethod
+from PyQt6.QtCore import QThread, pyqtSignal
 
 class DataThread(QThread):
 
     value = pyqtSignal(float)
 
-    def __init__(self, gen: Generator[float, None, None]) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.gen: Generator[float, None, None] = gen
 
-    def get_value(self):
-        self.value.emit(next(self.gen))
+    @abstractmethod
+    def get_value(self, *args, **kwargs):
+        pass
 
 
     
