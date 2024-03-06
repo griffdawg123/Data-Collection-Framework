@@ -28,7 +28,7 @@ class ConfigSelection(QWidget):
         self.load_button.clicked.connect(self.load_clicked)
 
 
-        self.layout = QVBoxLayout()
+        self.layout: QVBoxLayout = QVBoxLayout()
         self.layout.addStretch()
         self.layout.addWidget(self.new_button)
         self.layout.addWidget(self.load_button)

@@ -8,10 +8,12 @@ def center(window: QWidget) -> None:
         window (QWidget): The window to be centred
     """
     screen_rect = window.frameGeometry()
-    screen_geometry = window.screen().availableGeometry()
-    centre_point = screen_geometry.center()
-    screen_rect.moveCenter(centre_point)
-    window.move(screen_rect.topLeft())
+    screen = window.screen()
+    if screen is not None:
+        screen_geometry = screen.availableGeometry()
+        centre_point = screen_geometry.center()
+        screen_rect.moveCenter(centre_point)
+        window.move(screen_rect.topLeft())
 
 def format_config_name(string: str) -> str:
     """Generates a config name by lower casing and joining a string with '_'
