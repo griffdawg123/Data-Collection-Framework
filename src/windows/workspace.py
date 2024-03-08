@@ -6,6 +6,8 @@ import string
 import sys
 import os
 
+from src.ble.ble_generators import ReadThread
+
 # append path directory to system path so other modules can be accessed
 myDir = os.getcwd()
 sys.path.append(myDir)
@@ -48,6 +50,7 @@ class Workspace(QWidget):
 
         self.sin_graph: DataPlot = DataPlot(SinThread(), y_max=1, y_min=-1, datarate=50)
         self.rand_graph: DataPlot = DataPlot(RandomThread(), y_min=0, y_max=1, datarate=50)
+        self.battery_graph: DataPlot = DataPlot(ReadThread("F1:EC:95:17:0A:62", "00002a19-0000-1000-8000-00805f9b34fb"), y_min=0, y_max=100, datarate=1)
 
         self.restart_button = QPushButton()
         self.restart_button.setText("Restart")
@@ -62,8 +65,8 @@ class Workspace(QWidget):
         self.layout: QGridLayout = QGridLayout()
         self.layout.addWidget(self.title, 0, 0, 1, 4)
         self.layout.addWidget(self.setup_column, 1, 0, 10, 1)
-        self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
-        self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
+        # self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
+        # self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
         self.setLayout(self.layout)
 
     def load_config(self) -> None:
