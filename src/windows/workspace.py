@@ -25,6 +25,7 @@ class Workspace(QWidget):
         self.logger = logger
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
+        self.hide()
 
     def read_config(self, config_path: str) -> None:
         with open(config_path, "r") as infile:
