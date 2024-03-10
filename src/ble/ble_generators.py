@@ -2,6 +2,7 @@ from bleak import BleakClient
 from threads import DataThread
 import asyncio
 import numpy as np
+from PyQt6.QtCore import pyqtSlot
 
 class ReadThread(DataThread):
     def __init__(self, device_address: str, service_uuid) -> None:
@@ -9,6 +10,7 @@ class ReadThread(DataThread):
         self.uuid = service_uuid
         self.device_address = device_address
         self.client = BleakClient(self.device_address)
+        self.connect()
         self.current_val = b'abc'
 
     # updates current value and then emits it
@@ -21,6 +23,17 @@ class ReadThread(DataThread):
     # reads current value from device
     async def read_value(self):
         self.current_val = await self.client.read_gatt_char(self.uuid)
+
+    def connect(self):
+        print("attempting to connect")
+        asyncio.run(self.client.connect())
+        print("connected")
+
+    @pyqtSlot()
+    def disconnect(self):
+        print("Attempting to disconnect")
+        asyncio.run(self.client.disconnect())
+        print("Disconnected")
 
 if __name__ == "__main__":
     import os, sys
@@ -36,5 +49,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     battery_graph: DataPlot = DataPlot(ReadThread("F1:EC:95:17:0A:62", "00002a19-0000-1000-8000-00805f9b34fb"), y_min=0, y_max=100, datarate=1)
     battery_graph.show()
+    app.aboutToQuit.connect(battery_graph.disconnect)
     sys.exit(app.exec())
         
