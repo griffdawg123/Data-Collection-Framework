@@ -13,5 +13,8 @@ class DataThread(QThread):
     def get_value(self, *args, **kwargs):
         pass
 
+    @abstractmethod
+    def cleanup(self):
+        pass
 
     
