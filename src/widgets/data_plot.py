@@ -86,4 +86,6 @@ class DataPlot(pg.PlotWidget):
     def cleanup(self):
         print("cleanup")
         self.source.cleanup()
-    
+
+    def send_value(self, value: bytes):
+        self.source.send_value(value)

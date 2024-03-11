@@ -17,4 +17,8 @@ class DataThread(QThread):
     def cleanup(self):
         pass
 
+    @abstractmethod
+    def send_value(self, value: bytes):
+        pass
+
     
