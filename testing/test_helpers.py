@@ -7,8 +7,10 @@ def test_center(qtbot):
     qtbot.addWidget(widget)
 
     # gets the height and width of the screen the widget resides in
-    screen_height = widget.screen().availableGeometry().height()
-    screen_width = widget.screen().availableGeometry().width()
+    screen = widget.screen()
+    assert screen is not None
+    screen_height = screen.availableGeometry().height()
+    screen_width = screen.availableGeometry().width()
 
     # gets the height and width of the widget
     widget_height = widget.frameGeometry().height()
