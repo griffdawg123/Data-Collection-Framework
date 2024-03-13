@@ -82,5 +82,10 @@ class DataPlot(pg.PlotWidget):
             print(f"{self.source} FPS: {frames - self.last_frames}")
             self.last_frames = frames
             self.time_last = time.time()
-        
-    
+
+    def cleanup(self):
+        print("cleanup")
+        self.source.cleanup()
+
+    def send_value(self, value: bytes):
+        self.source.send_value(value)

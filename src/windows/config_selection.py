@@ -3,9 +3,9 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QFileDialog
 import logging
 import json
-from windows.new_config import NewConfig
-from windows.load_config import LoadConfig
-import helpers
+from src.windows.new_config import NewConfig
+from src.windows.load_config import LoadConfig
+import src.helpers
 
 class ConfigSelection(QWidget):
     def __init__(self, logger: logging.Logger, set_config_path: Callable[[str], None]) -> None:
@@ -17,7 +17,7 @@ class ConfigSelection(QWidget):
     def init_gui(self) -> None:
         self.setWindowTitle("Data Collection Framework")
         self.resize(720, 540)
-        helpers.center(self)
+        src.helpers.center(self)
 
         self.new_button = QPushButton(parent=self, text="New Workspace")
         self.new_button.setFixedSize(250, 75)
@@ -43,12 +43,12 @@ class ConfigSelection(QWidget):
         success, new_workspace_filename = new_workspace_dialogue.get_file_name()
         if success:
             self.logger.info("New Workspace Successful")
-            with open(f"config/workspaces/{helpers.format_config_name(new_workspace_filename)}.config", "w+") as new_file:
+            with open(f"config/workspaces/{src.helpers.format_config_name(new_workspace_filename)}.config", "w+") as new_file:
                 json_config = {}
                 json_config["name"] = new_workspace_filename
                 new_file.write(json.dumps(json_config))
             self.logger.info(f"New workspace created with name: {new_workspace_filename}")
-            self.config_url = f"config/workspaces/{helpers.format_config_name(new_workspace_filename)}.config"
+            self.config_url = f"config/workspaces/{src.helpers.format_config_name(new_workspace_filename)}.config"
             self.set_config_func(self.config_url)
             self.close()
         else:

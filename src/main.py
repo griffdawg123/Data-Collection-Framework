@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
 from PyQt6.QtCore import pyqtSignal
-from windows.workspace import Workspace
+from src.windows.workspace import Workspace
 import logging
 import time
 from qasync import QEventLoop
@@ -20,5 +20,5 @@ if __name__=="__main__":
     app = QApplication(sys.argv)
     event_loop = QEventLoop(app)
     asyncio.set_event_loop(event_loop)
-    workspace = Workspace(logger)
+    workspace = Workspace(logger, app)
     event_loop.run_forever()

@@ -7,6 +7,7 @@ ADDRESS = "F1:EC:95:17:0A:62"
 DEVICE_NAME = "0101"
 BATTERY_LEVEL = "2a19"
 # BATTERY_LEVEL = "180F"
+HEADING = "0409"
 
 def get_url(UUID: str) -> str:
     return f"EF68{UUID}-9B35-4933-9B10-52FFA9740042"
@@ -44,9 +45,26 @@ async def battery_level() -> None:
         except Exception as e:
             print(e)
 
+
+
+#data is sent as hex 
+# if 16Qn, divide by 2**n
+async def heading() -> None:
+    async with BleakClient(ADDRESS) as client:
+        print(f"Connected to {ADDRESS}: {client.is_connected}")
+        await client.start_notify(get_url(HEADING), lambda char, data: print(float(np.frombuffer(data, np.int32)[0])/float(2**16)))
+        await asyncio.sleep(5)
+        await client.stop_notify(get_url(HEADING))
+
+# async def 
+
+    
+
+
 if __name__=="__main__":
     # asyncio.run(read_name())
     # asyncio.run(write_name("Kaete"))
     # asyncio.run(read_name())
-    asyncio.run(battery_level())
+    # asyncio.run(battery_level())
+    asyncio.run(heading())
 
