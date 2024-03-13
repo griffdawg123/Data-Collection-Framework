@@ -1,12 +1,10 @@
 from logging import Logger
-from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication
 from PyQt6.QtCore import Qt
 import json
 import string
 import sys
 import os
-
-from src.ble.ble_generators import ReadThread
 
 # append path directory to system path so other modules can be accessed
 myDir = os.getcwd()
@@ -17,11 +15,13 @@ a=str(path.parent.absolute())
 sys.path.append(a)
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import RandomThread, SinThread
-from windows.config_selection import ConfigSelection
+from src.windows.config_selection import ConfigSelection
+from src.ble.ble_generators import NotifyThread, ReadThread
 
 class Workspace(QWidget):
-    def __init__(self, logger: Logger) -> None:
+    def __init__(self, logger: Logger, app: QApplication) -> None:
         super().__init__()
+        self.app = app
         self.config_path: str = ""
         self.config: dict = {}
         self.logger = logger
@@ -49,14 +49,18 @@ class Workspace(QWidget):
         self.setup_column_label.setText("Setup Column")
         self.setup_column_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        self.sin_graph: DataPlot = DataPlot(SinThread(), y_max=1, y_min=-1, datarate=50)
-        self.rand_graph: DataPlot = DataPlot(RandomThread(), y_min=0, y_max=1, datarate=50)
-        self.battery_graph: DataPlot = DataPlot(ReadThread("F1:EC:95:17:0A:62", "00002a19-0000-1000-8000-00805f9b34fb"), y_min=0, y_max=100, datarate=1)
+        # self.sin_graph: DataPlot = DataPlot(SinThread(), y_max=1, y_min=-1, datarate=50)
+        # self.rand_graph: DataPlot = DataPlot(RandomThread(), y_min=0, y_max=1, datarate=50)
+        # self.battery_graph: DataPlot = DataPlot(ReadThread("F1:EC:95:17:0A:62", "00002a19-0000-1000-8000-00805f9b34fb"), y_min=0, y_max=100, datarate=1)
+
+        self.pitch = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
+        self.yaw = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
+        self.roll = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
 
         self.restart_button = QPushButton()
         self.restart_button.setText("Restart")
-        self.restart_button.clicked.connect(self.sin_graph.restart)
-        self.restart_button.clicked.connect(self.rand_graph.restart)
+        # self.restart_button.clicked.connect(self.sin_graph.restart)
+        # self.restart_button.clicked.connect(self.rand_graph.restart)
         
         self.setup_column_layout = QVBoxLayout()
         self.setup_column_layout.addWidget(self.setup_column_label)
@@ -65,7 +69,10 @@ class Workspace(QWidget):
 
         self.layout: QGridLayout = QGridLayout()
         self.layout.addWidget(self.title, 0, 0, 1, 4)
-        self.layout.addWidget(self.setup_column, 1, 0, 10, 1)
+        self.layout.addWidget(self.setup_column, 1, 0, 9, 1)
+        self.layout.addWidget(self.pitch, 1, 1, 3, 3)
+        self.layout.addWidget(self.yaw, 1, 1, 3, 3)
+        self.layout.addWidget(self.roll, 1, 1, 3, 3)
         # self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
         # self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
         self.setLayout(self.layout)

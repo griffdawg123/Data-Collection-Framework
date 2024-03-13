@@ -1,6 +1,6 @@
 from bleak import BleakClient
 from bleak.exc import BleakError
-from threads import DataThread
+from src.ble.threads import DataThread
 import asyncio
 import numpy as np
 from PyQt6.QtCore import pyqtSlot
@@ -17,7 +17,9 @@ class BLEThread(DataThread):
         self.current_val = b'\x00'
 
     async def connect(self):
+        print(f"Connecting to {self.device_address}")
         await self.client.connect()
+        print(f"Connected!")
 
     def cleanup(self):
         print("cleaning up")
