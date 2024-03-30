@@ -58,7 +58,7 @@ class DataPlot(pg.PlotWidget):
         if p_item is not None:
             self.plot = p_item.plot([], [], pen=pg.mkPen("r", width=2))
         self.frame_changed.connect(self.source.get_value)
-        self.frame_changed.connect(self.frame_rate)
+        # self.frame_changed.connect(self.frame_rate)
         self.source.value.connect(self.generate_data)
         self.start()
 
