@@ -57,13 +57,22 @@ class Workspace(QWidget):
         # self.yaw = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
         # self.roll = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
 
+        self.battery_graph = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680409-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200, num_data_points=400)
+
+        self.status_text= QLabel()
+        self.status_text.setText("Idle")
+        self.battery_graph.source.status.connect(self.status_text.setText)
+
+
         self.restart_button = QPushButton()
         self.restart_button.setText("Restart")
         self.restart_button.clicked.connect(self.sin_graph.restart)
-        self.restart_button.clicked.connect(self.rand_graph.restart)
+        # self.restart_button.clicked.connect(self.rand_graph.restart)
+        self.restart_button.clicked.connect(self.battery_graph.restart)
         
         self.setup_column_layout = QVBoxLayout()
         self.setup_column_layout.addWidget(self.setup_column_label)
+        self.setup_column_layout.addWidget(self.status_text)
         self.setup_column_layout.addWidget(self.restart_button)
         self.setup_column.setLayout(self.setup_column_layout)
 
@@ -74,8 +83,10 @@ class Workspace(QWidget):
         # self.layout.addWidget(self.yaw, 1, 1, 3, 3)
         # self.layout.addWidget(self.roll, 1, 1, 3, 3)
         self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
-        self.layout.addWidget(self.rand_graph, 6, 1, 5, 3)
+        self.layout.addWidget(self.battery_graph, 6, 1, 5, 3)
         self.setLayout(self.layout)
+        self.app.aboutToQuit.connect(self.battery_graph.cleanup)
+
 
     def load_config(self) -> None:
         self.config_window = ConfigSelection(self.logger, self.read_config)

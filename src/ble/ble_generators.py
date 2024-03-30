@@ -3,7 +3,7 @@ from bleak.exc import BleakError
 from src.ble.threads import DataThread
 import asyncio
 import numpy as np
-from PyQt6.QtCore import pyqtSlot
+from PyQt6.QtCore import pyqtSlot, pyqtSignal
 from qasync import QEventLoop, QThreadExecutor, asyncClose
 
 class BLEThread(DataThread):
@@ -53,6 +53,7 @@ class ReadThread(BLEThread):
         self.current_val = await self.client.read_gatt_char(self.uuid)
 
 class NotifyThread(BLEThread):
+
     def __init__(self, device_address: str, service_uuid) -> None:
         super().__init__(device_address, service_uuid)
         self.loop.create_task(self.init_notif())
@@ -69,8 +70,12 @@ class NotifyThread(BLEThread):
             self.value.emit(0)
 
     async def init_notif(self):
+        self.status.emit("Attempting to connect")
         await self.connect_task
+        self.status.emit("Connected")
+        self.status.emit("Starting notify")
         await self.client.start_notify(self.uuid, lambda char, data: self.set_current_val(data))
+        self.status.emit("Notify Started")
         
 
 if __name__ == "__main__":

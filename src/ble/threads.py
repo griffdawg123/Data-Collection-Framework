@@ -5,6 +5,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 class DataThread(QThread):
 
     value = pyqtSignal(float)
+    status = pyqtSignal(str)
 
     def __init__(self) -> None:
         super().__init__()
