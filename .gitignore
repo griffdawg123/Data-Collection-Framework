@@ -6,3 +6,4 @@ config/workspaces/*
 logs/*
 !logs
 __pycache__/
+.vscode/
