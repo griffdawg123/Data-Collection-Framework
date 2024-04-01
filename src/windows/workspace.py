@@ -3,16 +3,7 @@ from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayo
 from PyQt6.QtCore import Qt
 import json
 import string
-import sys
-import os
-
-# append path directory to system path so other modules can be accessed
-myDir = os.getcwd()
-sys.path.append(myDir)
-from pathlib import Path
-path = Path(myDir)
-a=str(path.parent.absolute())
-sys.path.append(a)
+from src.loaders.config_loader import ConfigLoader
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import RandomThread, SinThread
 from src.windows.config_selection import ConfigSelection
@@ -23,15 +14,14 @@ class Workspace(QWidget):
         super().__init__()
         self.app = app
         self.config_path: str = ""
-        self.config: dict = {}
+        self.config_manager = None
         self.logger = logger
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
         self.hide()
 
     def read_config(self, config_path: str) -> None:
-        with open(config_path, "r") as infile:
-            self.config = json.loads(infile.read())
+        self.config_manager = ConfigLoader(config_path)
         self.load_UI()
         self.showMaximized()
 
@@ -94,10 +84,10 @@ class Workspace(QWidget):
         self.hide()
 
     def get_title(self) -> str:
-        if self.config is None:
+        if self.config_manager is None:
             return "Data Acquisition Framework"
         else:
-            return self.config["name"]
+            return self.config_manager.get_config_name()
 
     
     
