@@ -7,11 +7,10 @@ from bleak import BleakClient
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
-    def __init__(self, device_label: str, device_address: str) -> None:
+    def __init__(self, device_label: str, device: BleakClient) -> None:
         super().__init__()
         self.label = device_label
-        self.address = device_address
-        self.client = BleakClient(self.address)
+        self.client = device
         self.title_label = QLabel(self.label)
         self.current_status = LEDColor.IDLE
         self.stat_led = LEDIndicator(self.current_status)
@@ -51,7 +50,7 @@ class BLEStatus(QWidget):
             print(exp)
             self.current_status = LEDColor.ERROR
         elif self.client.is_connected:
-            print(f"Connected to device: {self.address}")
+            print(f"Connected to device: {self.client.address}")
             self.current_status = LEDColor.OKAY
         else:
             print("Retry")
@@ -70,7 +69,8 @@ if __name__=="__main__":
     app = QApplication(sys.argv)
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
-    status = BLEStatus("THINGY", "F1:EC:95:17:0A:62")
+    device = BleakClient("F1:EC:95:17:0A:62")
+    status = BLEStatus("THINGY", device)
     status.setGeometry(200, 200, 100, 100)
     status.show()
     loop.run_forever()
