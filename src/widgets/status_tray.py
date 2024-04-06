@@ -14,17 +14,22 @@ class StatusTray(QScrollArea):
         super().__init__()
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setWidgetResizable(True)
         self.scroll_widget = QWidget()
         self.clients = clients
         self.fill_layout()
 
     def fill_layout(self):
         self.vbox = QVBoxLayout()
+        # self.vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
         for label, client in self.clients.items():
-            status = BLEStatus(label, client)
-            self.vbox.addWidget(status)
+            status = BLEStatus(label, client, parent=self)
+            status.resize(self.width(), status.height())
+            self.vbox.addWidget(status, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.vbox.addStretch(1)
         self.scroll_widget.setLayout(self.vbox)
         self.setWidget(self.scroll_widget)
+        
 
 if __name__=="__main__":
 

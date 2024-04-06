@@ -1,5 +1,6 @@
 import asyncio
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy
+from PyQt6.QtCore import Qt
 import sys
 from qasync import QEventLoop
 from bleak import BleakClient
@@ -7,21 +8,25 @@ from bleak import BleakClient
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
-    def __init__(self, device_label: str, device: BleakClient) -> None:
-        super().__init__()
+    def __init__(self, device_label: str, device: BleakClient, parent=None) -> None:
+        super().__init__(parent)
         self.label = device_label
         self.client = device
+        self.address = self.client.address
         self.title_label = QLabel(self.label)
         self.current_status = LEDColor.IDLE
         self.stat_led = LEDIndicator(self.current_status)
         self.stat_label = QLabel(self.current_status.name)
         self.retry = QPushButton()
+        self.address_label = QLabel(self.address)
         self.init_ui()
         self.init_ble()
 
     def init_ui(self):
         layout = QVBoxLayout()
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.title_label)
+        layout.addWidget(self.address_label)
 
         self.indicator_widget = QWidget()
         indicator_layout = QHBoxLayout()
@@ -29,12 +34,13 @@ class BLEStatus(QWidget):
         indicator_layout.addWidget(self.stat_label)
         self.indicator_widget.setLayout(indicator_layout)
         layout.addWidget(self.indicator_widget)
-
         self.retry.setText("Retry")
         self.retry.clicked.connect(self.init_ble)
         layout.addWidget(self.retry)
 
         self.setLayout(layout)
+        # sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # self.setSizePolicy(sizePolicy)
         self.setStyleSheet("border: 1px solid black;")
 
     def init_ble(self):
