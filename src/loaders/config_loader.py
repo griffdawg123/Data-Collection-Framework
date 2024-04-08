@@ -65,7 +65,11 @@ class ConfigLoader():
             return
         with open(path, "w") as outfile:
             outfile.write(json.dumps(device_config))
-        self.config["devices"] = self.config.get("devices").append(file_name)
+        device_list = self.config["devices"]
+        if device_list is not None:
+            device_list = list(device_list)
+            device_list.append(file_name)
+            self.config["devices"] = device_list
         self.save_config()
 
     def load_device(self, device_path):

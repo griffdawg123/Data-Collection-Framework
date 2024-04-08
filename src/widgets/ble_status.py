@@ -8,7 +8,8 @@ from bleak import BleakClient
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
-    def __init__(self, device_label: str, device: BleakClient, parent=None) -> None:
+
+    def __init__(self, device_label: str, device: BleakClient, remove_func, parent=None) -> None:
         super().__init__(parent)
         self.label = device_label
         self.client = device
@@ -19,6 +20,8 @@ class BLEStatus(QWidget):
         self.stat_label = QLabel(self.current_status.name)
         self.retry = QPushButton()
         self.address_label = QLabel(self.address)
+        self.remove_device = QPushButton("Remove")
+        self.remove_device.clicked.connect(lambda _ : remove_func(self.label))
         self.init_ui()
         self.init_ble()
 
@@ -37,10 +40,9 @@ class BLEStatus(QWidget):
         self.retry.setText("Retry")
         self.retry.clicked.connect(self.init_ble)
         layout.addWidget(self.retry)
+        layout.addWidget(self.remove_device)
 
         self.setLayout(layout)
-        # sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        # self.setSizePolicy(sizePolicy)
         self.setStyleSheet("border: 1px solid black;")
 
     def init_ble(self):
@@ -76,7 +78,7 @@ if __name__=="__main__":
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
     device = BleakClient("F1:EC:95:17:0A:62")
-    status = BLEStatus("THINGY", device)
+    status = BLEStatus("THINGY", device, print)
     status.setGeometry(200, 200, 100, 100)
     status.show()
     loop.run_forever()

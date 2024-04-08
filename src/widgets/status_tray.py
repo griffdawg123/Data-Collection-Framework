@@ -23,13 +23,15 @@ class StatusTray(QScrollArea):
         self.vbox = QVBoxLayout()
         # self.vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
         for label, client in self.clients.items():
-            status = BLEStatus(label, client, parent=self)
+            status = BLEStatus(label, client, self.remove_device, parent=self)
             status.resize(self.width(), status.height())
             self.vbox.addWidget(status, alignment=Qt.AlignmentFlag.AlignCenter)
         self.vbox.addStretch(1)
         self.scroll_widget.setLayout(self.vbox)
         self.setWidget(self.scroll_widget)
         
+    def remove_device(self, device_name):
+        print(device_name)
 
 if __name__=="__main__":
 
