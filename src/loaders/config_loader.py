@@ -10,6 +10,7 @@ from src.helpers import format_config_name
 
 class ConfigLoader():
     def __init__(self, config_path: str) -> None:
+        # print(config_path)
         self.config_path = config_path
         self.config = self.load_config()
         self.device_files = [f"{conf}.config" for conf in self.get_device_names()]
@@ -33,7 +34,7 @@ class ConfigLoader():
     
     def get_device_names(self) -> List[str]:
         device_list = self.config.get("devices")
-        if not device_list:
+        if device_list is None:
             raise ConfigError("No Device List Found")
         if type(device_list) != list:
             raise ConfigError("Device List must be a list")
@@ -42,8 +43,13 @@ class ConfigLoader():
     def load_device_configs(self) -> List[dict]:
         devices = []
         for device_file in self.device_files:
+            # print(device_file)
+            # device_file_obj = json.loads(device_file)
             with open(f"config/devices/{device_file}", "r") as infile:
-                devices.append(json.loads(infile.read()))
+                # print(infile.read())
+                data = infile.read()
+                print(data)
+                devices.append(json.loads(data))
         return devices
     
     def load_device_managers(self) -> dict[str, BleakClient]:
@@ -59,12 +65,21 @@ class ConfigLoader():
             return
         with open(path, "w") as outfile:
             outfile.write(json.dumps(device_config))
+        self.config["devices"] = self.config.get("devices").append(file_name)
+        self.save_config()
+
+    def load_device(self, device_path):
+        print(self.config["devices"])
+        device_list = self.config["devices"]
+        if device_list is not None:
+            device_list = list(device_list)
+            print(device_list)
+            device_list.append(device_path.split("/")[-1].split(".")[0])
+            self.config["devices"] = device_list
+        print(self.config["devices"])
+        self.save_config()
         
 
 if __name__=="__main__":
-    loader = ConfigLoader("new_config.config")
-    print(loader.get_config_name())
-    print(loader.get_device_names())
-    print(loader.device_files)
-    print(loader.load_device_configs())
-    print(loader.load_device_managers())
+    loader = ConfigLoader("config/workspaces/new_workspace.config")
+    loader.save_device("Helo", "world")

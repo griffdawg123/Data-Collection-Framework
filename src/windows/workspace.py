@@ -1,5 +1,5 @@
 from logging import Logger
-from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication, QHBoxLayout, QFileDialog
 from PyQt6.QtCore import Qt
 import json
 import string
@@ -66,6 +66,9 @@ class Workspace(QWidget):
         self.new_device_button = QPushButton("New Device")
         self.new_device_button.clicked.connect(self.new_device)
 
+        self.load_device_button = QPushButton("Load Device")
+        self.load_device_button.clicked.connect(self.load_device)
+
         self.restart_button = QPushButton()
         self.restart_button.setText("Restart")
         # self.restart_button.clicked.connect(self.sin_graph.restart)
@@ -76,6 +79,7 @@ class Workspace(QWidget):
         self.setup_column_layout.addWidget(self.setup_column_label)
         self.setup_column_layout.addWidget(self.status_tray)
         self.setup_column_layout.addWidget(self.new_device_button)
+        self.setup_column_layout.addWidget(self.load_device_button)
         self.setup_column_layout.addWidget(self.restart_button)
         self.setup_column.setLayout(self.setup_column_layout)
 
@@ -122,6 +126,14 @@ class Workspace(QWidget):
     def new_device(self) -> None:
         new_dialog = NewDevice()
         if new_dialog.exec():
-            print(new_dialog.get_text())
+            name, address = new_dialog.get_text()
+            if self.config_manager is not None:
+                self.config_manager.save_device(name, address)
 
+    def load_device(self) -> None:
+        config_path, _ = QFileDialog.getOpenFileName(self,self.tr("Open Config"), "./config/devices/", self.tr("Config Files (*.config)"))
+        if config_path:
+            if self.config_manager is not None:
+                self.config_manager.load_device(config_path)
+            
 
