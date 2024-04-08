@@ -1,10 +1,12 @@
 import json
 from typing import List, Dict
+import os
 
 from bleak import BleakClient
 
 from src.loaders.config_error import ConfigError
 from src.loaders.device_loader import DeviceLoader
+from src.helpers import format_config_name
 
 class ConfigLoader():
     def __init__(self, config_path: str) -> None:
@@ -16,6 +18,10 @@ class ConfigLoader():
     def load_config(self):
         with open(self.config_path, "r") as infile:
             return json.loads(infile.read())
+        
+    def save_config(self):
+        with open(self.config_path, "w") as outfile:
+            outfile.write(json.dumps(self.config))
 
     def get_config_name(self) -> str:
         name = self.config.get("name")
@@ -43,6 +49,17 @@ class ConfigLoader():
     def load_device_managers(self) -> dict[str, BleakClient]:
         device_loader = DeviceLoader(self.device_configs)
         return device_loader.get_devices()
+    
+    def save_device(self, name, address):
+        device_config = {"name" : name, "address" : address}
+        file_name = format_config_name(name)
+        path = f"config/devices/{file_name}.config"
+        if os.path.isfile(path):
+            print(f"Device called {name} already exists!")
+            return
+        with open(path, "w") as outfile:
+            outfile.write(json.dumps(device_config))
+        
 
 if __name__=="__main__":
     loader = ConfigLoader("new_config.config")

@@ -22,4 +22,3 @@ class DeviceLoader():
                 raise ConfigError("Address field not found")
             devices[name] = BleakClient(address)
         return devices
-    

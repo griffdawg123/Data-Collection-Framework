@@ -11,6 +11,7 @@ from src.ble.static_generators import RandomThread, SinThread
 from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
 from src.ble.ble_generators import NotifyThread, ReadThread
+from src.windows.new_device import NewDevice
 
 class Workspace(QWidget):
     def __init__(self, logger: Logger, app: QApplication) -> None:
@@ -62,6 +63,9 @@ class Workspace(QWidget):
         self.clients = {"Thingy" : BleakClient("F1:EC:95:17:0A:62")}
         self.status_tray = StatusTray(self.clients)
 
+        self.new_device_button = QPushButton("New Device")
+        self.new_device_button.clicked.connect(self.new_device)
+
         self.restart_button = QPushButton()
         self.restart_button.setText("Restart")
         # self.restart_button.clicked.connect(self.sin_graph.restart)
@@ -71,6 +75,7 @@ class Workspace(QWidget):
         self.setup_column_layout = QVBoxLayout()
         self.setup_column_layout.addWidget(self.setup_column_label)
         self.setup_column_layout.addWidget(self.status_tray)
+        self.setup_column_layout.addWidget(self.new_device_button)
         self.setup_column_layout.addWidget(self.restart_button)
         self.setup_column.setLayout(self.setup_column_layout)
 
@@ -113,3 +118,10 @@ class Workspace(QWidget):
             return "Data Acquisition Framework"
         else:
             return self.config_manager.get_config_name()
+        
+    def new_device(self) -> None:
+        new_dialog = NewDevice()
+        if new_dialog.exec():
+            print(new_dialog.get_text())
+
+
