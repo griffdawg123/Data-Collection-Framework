@@ -47,7 +47,7 @@ class BLEStatus(QWidget):
 
     def init_ble(self):
         self.current_status = LEDColor.IDLE
-        self._update()
+        self.update()
         event_loop = asyncio.get_event_loop()
         connect_task = event_loop.create_task(self.client.connect())
         connect_task.add_done_callback(self.set_status)
@@ -63,12 +63,15 @@ class BLEStatus(QWidget):
         else:
             print("Retry")
             self.current_status = LEDColor.IDLE
-        self._update()
+        self.update()
 
-    def _update(self):
+    def update(self):
         self.stat_label.setText(self.current_status.name)
         self.stat_led.set_status(self.current_status)
-        self.update()
+        super().update()
+
+    async def disconnect(self):
+        await self.client.disconnect()
 
 
 

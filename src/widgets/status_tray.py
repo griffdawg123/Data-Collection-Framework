@@ -10,36 +10,52 @@ from src.widgets.ble_status import BLEStatus
 
 
 class StatusTray(QScrollArea):
-    def __init__(self, clients: dict[str, BleakClient]) -> None:
+    def __init__(self, clients: dict[str, BleakClient], remove_device) -> None:
         super().__init__()
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidgetResizable(True)
+        self.event_loop = asyncio.get_event_loop()
         self.scroll_widget = QWidget()
-        self.clients = clients
+        self.clients: dict[str, BleakClient] = clients
+        self.remove_device_config = remove_device
+        self.statuses: dict[str, BLEStatus] = {}
+        self.vbox = QVBoxLayout()
+        self.load_all_devices() # fills the statuses dict with BLEStatus objects
         self.fill_layout()
 
     def fill_layout(self):
-        self.vbox = QVBoxLayout()
-        # self.vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        for status in self.statuses.values():
+            self.vbox.addWidget(status, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.stretch = self.vbox.addStretch(1)
+        self.set_layout_widget()
+
+    def load_all_devices(self):
         for label, client in self.clients.items():
             status = BLEStatus(label, client, self.remove_device, parent=self)
             status.resize(self.width(), status.height())
-            self.vbox.addWidget(status, alignment=Qt.AlignmentFlag.AlignCenter)
-        self.vbox.addStretch(1)
-        self.scroll_widget.setLayout(self.vbox)
-        self.setWidget(self.scroll_widget)
+            self.statuses[label] = status
         
     def remove_device(self, device_name):
-        print(device_name)
+        # print(f"removing {device_name}")
+        self.scroll_widget.layout()
+        disconnect_task = self.event_loop.create_task(self.statuses[device_name].disconnect())
+        self.vbox.removeWidget(self.statuses[device_name])
+        self.statuses[device_name].deleteLater()
+        self.statuses.pop(device_name)
+        self.clients.pop(device_name)
+        self.remove_device_config(device_name)
+        self.set_layout_widget()
 
-if __name__=="__main__":
+    def add_device(self, device_name, device_address):
+        new_status = BLEStatus(device_name, BleakClient(device_address), self.remove_device, parent=self)
+        self.statuses[device_name] = new_status
+        # self.vbox.removeWidget(self.stretch)
+        self.vbox.insertWidget(self.vbox.count() -1 , new_status)
+        # self.vbox.addStretch(1)
+        self.set_layout_widget()
 
-    app = QApplication(sys.argv)
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    devices = {"THINGY" : BleakClient("F1:EC:95:17:0A:62"), "THONGY" : BleakClient("F1:EC:95:17:0A:63")}
-    scroll = StatusTray(devices)
-    scroll.setGeometry(200, 200, 100, 100)
-    scroll.show()
-    loop.run_forever()
+    def set_layout_widget(self):
+        self.scroll_widget.setLayout(self.vbox)
+        self.setWidget(self.scroll_widget)
+        self.update()

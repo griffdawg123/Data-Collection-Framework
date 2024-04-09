@@ -77,10 +77,19 @@ class ConfigLoader():
         device_list = self.config["devices"]
         if device_list is not None:
             device_list = list(device_list)
-            print(device_list)
             device_list.append(device_path.split("/")[-1].split(".")[0])
             self.config["devices"] = device_list
         print(self.config["devices"])
+        self.save_config()
+    
+    def remove_device(self, device_name):
+        device_list = self.config["devices"]
+        print("here")
+        if device_list is not None:
+            device_list=list(device_list)
+            print(device_list)
+            device_list.remove(format_config_name(device_name))
+            self.config["devices"] = device_list
         self.save_config()
         
 

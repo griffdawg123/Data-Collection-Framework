@@ -1,8 +1,10 @@
 from logging import Logger
+from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication, QHBoxLayout, QFileDialog
 from PyQt6.QtCore import Qt
 import json
 import string
+import asyncio
 
 from bleak import BleakClient
 from src.loaders.config_loader import ConfigLoader
@@ -19,6 +21,7 @@ class Workspace(QWidget):
         self.app = app
         self.config_path: str = ""
         self.config_manager = None
+        self.clients = {}
         self.logger = logger
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
@@ -46,8 +49,9 @@ class Workspace(QWidget):
         self.plots = QLabel("Plots")
         self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
         
-        self.clients = {"Thingy" : BleakClient("F1:EC:95:17:0A:62")}
-        self.status_tray = StatusTray(self.clients)
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+        self.status_tray = StatusTray(self.clients, self.remove_device)
 
         self.new_device_button = QPushButton("New Device")
         self.new_device_button.clicked.connect(self.new_device)
@@ -100,11 +104,38 @@ class Workspace(QWidget):
             name, address = new_dialog.get_text()
             if self.config_manager is not None:
                 self.config_manager.save_device(name, address)
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+            self.status_tray.add_device(name, address)
 
     def load_device(self) -> None:
         config_path, _ = QFileDialog.getOpenFileName(self,self.tr("Open Config"), "./config/devices/", self.tr("Config Files (*.config)"))
+        new_device = {}
         if config_path:
             if self.config_manager is not None:
                 self.config_manager.load_device(config_path)
-            
+            with open(config_path, "r") as infile:
+                new_device = json.loads(infile.read())
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+            if new_device:
+                self.status_tray.add_device(new_device["name"], new_device["address"])
 
+    def remove_device(self, device_name):
+        if self.config_manager is not None:
+            self.config_manager.remove_device(device_name)
+
+    # ensure all devices have been disconnected
+    def closeEvent(self, a0: QCloseEvent | None) -> None:
+        def set_disconnected(task, disconnected, i):
+            disconnected[i] = True
+
+        disconnected = [(not client.is_connected) for client in self.clients.values()]
+        loop = asyncio.get_event_loop()
+        disconnect_tasks = [(loop.create_task(client.disconnect())) for client in self.clients.values()]
+        for i, client in enumerate(self.clients.values()):
+            if client.is_connected:
+                disconnect_tasks[i].add_done_callback(lambda task: set_disconnected(task, disconnected, i))
+        while not all(disconnected):
+            continue
+        return super().closeEvent(a0)
