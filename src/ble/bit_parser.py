@@ -2,6 +2,8 @@ from typing import List, Any, NewType, Union, TypeVar
 import numpy as np
 from numpy.typing import NBitBase
 
+#TODO replace with Fixed Point optional parser
+
 T2 = TypeVar("T2", bound=NBitBase)
 
 int_types = {
