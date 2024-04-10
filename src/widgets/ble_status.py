@@ -1,5 +1,6 @@
 import asyncio
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QSizePolicy
+from PyQt6.QtCore import Qt
 import sys
 from qasync import QEventLoop
 from bleak import BleakClient
@@ -7,22 +8,28 @@ from bleak import BleakClient
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
-    def __init__(self, device_label: str, device_address: str) -> None:
-        super().__init__()
+
+    def __init__(self, device_label: str, device: BleakClient, remove_func, parent=None) -> None:
+        super().__init__(parent)
         self.label = device_label
-        self.address = device_address
-        self.client = BleakClient(self.address)
+        self.client = device
+        self.address = self.client.address
         self.title_label = QLabel(self.label)
         self.current_status = LEDColor.IDLE
         self.stat_led = LEDIndicator(self.current_status)
         self.stat_label = QLabel(self.current_status.name)
         self.retry = QPushButton()
+        self.address_label = QLabel(self.address)
+        self.remove_device = QPushButton("Remove")
+        self.remove_device.clicked.connect(lambda _ : remove_func(self.label))
         self.init_ui()
         self.init_ble()
 
     def init_ui(self):
         layout = QVBoxLayout()
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.title_label)
+        layout.addWidget(self.address_label)
 
         self.indicator_widget = QWidget()
         indicator_layout = QHBoxLayout()
@@ -30,17 +37,17 @@ class BLEStatus(QWidget):
         indicator_layout.addWidget(self.stat_label)
         self.indicator_widget.setLayout(indicator_layout)
         layout.addWidget(self.indicator_widget)
-
         self.retry.setText("Retry")
         self.retry.clicked.connect(self.init_ble)
         layout.addWidget(self.retry)
+        layout.addWidget(self.remove_device)
 
         self.setLayout(layout)
         self.setStyleSheet("border: 1px solid black;")
 
     def init_ble(self):
         self.current_status = LEDColor.IDLE
-        self._update()
+        self.update()
         event_loop = asyncio.get_event_loop()
         connect_task = event_loop.create_task(self.client.connect())
         connect_task.add_done_callback(self.set_status)
@@ -51,17 +58,20 @@ class BLEStatus(QWidget):
             print(exp)
             self.current_status = LEDColor.ERROR
         elif self.client.is_connected:
-            print(f"Connected to device: {self.address}")
+            print(f"Connected to device: {self.client.address}")
             self.current_status = LEDColor.OKAY
         else:
             print("Retry")
             self.current_status = LEDColor.IDLE
-        self._update()
+        self.update()
 
-    def _update(self):
+    def update(self):
         self.stat_label.setText(self.current_status.name)
         self.stat_led.set_status(self.current_status)
-        self.update()
+        super().update()
+
+    async def disconnect(self):
+        await self.client.disconnect()
 
 
 
@@ -70,7 +80,8 @@ if __name__=="__main__":
     app = QApplication(sys.argv)
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
-    status = BLEStatus("THINGY", "F1:EC:95:17:0A:62")
+    device = BleakClient("F1:EC:95:17:0A:62")
+    status = BLEStatus("THINGY", device, print)
     status.setGeometry(200, 200, 100, 100)
     status.show()
     loop.run_forever()

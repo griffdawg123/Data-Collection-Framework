@@ -1,37 +1,34 @@
 from logging import Logger
-from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication
+from PyQt6.QtGui import QCloseEvent
+from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication, QHBoxLayout, QFileDialog
 from PyQt6.QtCore import Qt
 import json
 import string
-import sys
-import os
+import asyncio
 
-# append path directory to system path so other modules can be accessed
-myDir = os.getcwd()
-sys.path.append(myDir)
-from pathlib import Path
-path = Path(myDir)
-a=str(path.parent.absolute())
-sys.path.append(a)
+from bleak import BleakClient
+from src.loaders.config_loader import ConfigLoader
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import RandomThread, SinThread
+from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
 from src.ble.ble_generators import NotifyThread, ReadThread
+from src.windows.new_device import NewDevice
 
 class Workspace(QWidget):
     def __init__(self, logger: Logger, app: QApplication) -> None:
         super().__init__()
         self.app = app
         self.config_path: str = ""
-        self.config: dict = {}
+        self.config_manager = None
+        self.clients = {}
         self.logger = logger
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
         self.hide()
 
     def read_config(self, config_path: str) -> None:
-        with open(config_path, "r") as infile:
-            self.config = json.loads(infile.read())
+        self.config_manager = ConfigLoader(config_path)
         self.load_UI()
         self.showMaximized()
 
@@ -49,44 +46,46 @@ class Workspace(QWidget):
         self.setup_column_label.setText("Setup Column")
         self.setup_column_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        self.sin_graph: DataPlot = DataPlot(SinThread(), y_max=1, y_min=-1, datarate=50)
-        self.rand_graph: DataPlot = DataPlot(RandomThread(), y_min=0, y_max=1, datarate=50)
-        # self.battery_graph: DataPlot = DataPlot(ReadThread("F1:EC:95:17:0A:62", "00002a19-0000-1000-8000-00805f9b34fb"), y_min=0, y_max=100, datarate=1)
+        self.plots = QLabel("Plots")
+        self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
+        
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+        self.status_tray = StatusTray(self.clients, self.remove_device)
 
-        # self.pitch = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
-        # self.yaw = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
-        # self.roll = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680407-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200)
+        self.new_device_button = QPushButton("New Device")
+        self.new_device_button.clicked.connect(self.new_device)
 
-        self.battery_graph = DataPlot(NotifyThread("F1:EC:95:17:0A:62", "EF680409-9B35-4933-9B10-52FFA9740042"), y_min=0, y_max=360, datarate=200, num_data_points=400)
-
-        self.status_text= QLabel()
-        self.status_text.setText("Idle")
-        self.battery_graph.source.status.connect(self.status_text.setText)
-
+        self.load_device_button = QPushButton("Load Device")
+        self.load_device_button.clicked.connect(self.load_device)
 
         self.restart_button = QPushButton()
         self.restart_button.setText("Restart")
-        self.restart_button.clicked.connect(self.sin_graph.restart)
-        # self.restart_button.clicked.connect(self.rand_graph.restart)
-        self.restart_button.clicked.connect(self.battery_graph.restart)
         
         self.setup_column_layout = QVBoxLayout()
         self.setup_column_layout.addWidget(self.setup_column_label)
-        self.setup_column_layout.addWidget(self.status_text)
+        self.setup_column_layout.addWidget(self.status_tray)
+        self.setup_column_layout.addWidget(self.new_device_button)
+        self.setup_column_layout.addWidget(self.load_device_button)
         self.setup_column_layout.addWidget(self.restart_button)
         self.setup_column.setLayout(self.setup_column_layout)
 
-        self.layout: QGridLayout = QGridLayout()
-        self.layout.addWidget(self.title, 0, 0, 1, 4)
-        self.layout.addWidget(self.setup_column, 1, 0, 9, 1)
-        # self.layout.addWidget(self.pitch, 1, 1, 3, 3)
-        # self.layout.addWidget(self.yaw, 1, 1, 3, 3)
-        # self.layout.addWidget(self.roll, 1, 1, 3, 3)
-        self.layout.addWidget(self.sin_graph, 1, 1, 5, 3)
-        self.layout.addWidget(self.battery_graph, 6, 1, 5, 3)
-        self.setLayout(self.layout)
-        self.app.aboutToQuit.connect(self.battery_graph.cleanup)
+        self.title_layout: QVBoxLayout = QVBoxLayout()
+        self.title_layout.addWidget(self.title)
 
+        self.workspace_layout: QHBoxLayout = QHBoxLayout()
+        self.workspace_layout.addWidget(self.setup_column)
+        self.workspace_layout.addWidget(self.plots)
+        self.workspace_layout.setStretch(0, 1)
+        self.workspace_layout.setStretch(1, 9)
+        self.workspace = QWidget()
+        self.workspace.setLayout(self.workspace_layout)
+
+        self.title_layout.addWidget(self.workspace)
+        self.title_layout.setStretch(0, 1)
+        self.title_layout.setStretch(1, 9)
+
+        self.setLayout(self.title_layout)
 
     def load_config(self) -> None:
         self.config_window = ConfigSelection(self.logger, self.read_config)
@@ -94,10 +93,49 @@ class Workspace(QWidget):
         self.hide()
 
     def get_title(self) -> str:
-        if self.config is None:
+        if self.config_manager is None:
             return "Data Acquisition Framework"
         else:
-            return self.config["name"]
+            return self.config_manager.get_config_name()
+        
+    def new_device(self) -> None:
+        new_dialog = NewDevice()
+        if new_dialog.exec():
+            name, address = new_dialog.get_text()
+            if self.config_manager is not None:
+                self.config_manager.save_device(name, address)
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+            self.status_tray.add_device(name, address)
 
-    
-    
+    def load_device(self) -> None:
+        config_path, _ = QFileDialog.getOpenFileName(self,self.tr("Open Config"), "./config/devices/", self.tr("Config Files (*.config)"))
+        new_device = {}
+        if config_path:
+            if self.config_manager is not None:
+                self.config_manager.load_device(config_path)
+            with open(config_path, "r") as infile:
+                new_device = json.loads(infile.read())
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+            if new_device:
+                self.status_tray.add_device(new_device["name"], new_device["address"])
+
+    def remove_device(self, device_name):
+        if self.config_manager is not None:
+            self.config_manager.remove_device(device_name)
+
+    # ensure all devices have been disconnected
+    def closeEvent(self, a0: QCloseEvent | None) -> None:
+        def set_disconnected(task, disconnected, i):
+            disconnected[i] = True
+
+        disconnected = [(not client.is_connected) for client in self.clients.values()]
+        loop = asyncio.get_event_loop()
+        disconnect_tasks = [(loop.create_task(client.disconnect())) for client in self.clients.values()]
+        for i, client in enumerate(self.clients.values()):
+            if client.is_connected:
+                disconnect_tasks[i].add_done_callback(lambda task: set_disconnected(task, disconnected, i))
+        while not all(disconnected):
+            continue
+        return super().closeEvent(a0)
