@@ -39,11 +39,10 @@ class StatusTray(QScrollArea):
     def remove_device(self, device_name):
         # print(f"removing {device_name}")
         self.scroll_widget.layout()
-        disconnect_task = self.event_loop.create_task(self.statuses[device_name].disconnect())
         self.vbox.removeWidget(self.statuses[device_name])
         self.statuses[device_name].deleteLater()
         self.statuses.pop(device_name)
-        self.clients.pop(device_name)
+        # self.clients.pop(device_name)
         self.remove_device_config(device_name)
         self.set_layout_widget()
 

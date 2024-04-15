@@ -12,7 +12,7 @@ class BLEDataType(IntEnum):
 #TODO allow for multiple graphs
 
 class PlotWidget(QWidget):
-    def __init__(self, uuid: str = "", data_type: BLEDataType = BLEDataType.READ, parent: QWidget | None = None) -> None:
+    def __init__(self, device_list, uuid: str = "", data_type: BLEDataType = BLEDataType.READ, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.uuid = uuid
         self.data_type = data_type
@@ -82,5 +82,5 @@ class PlotWidget(QWidget):
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
-    plot = PlotWidget()
+    plot = PlotWidget({})
     sys.exit(app.exec())

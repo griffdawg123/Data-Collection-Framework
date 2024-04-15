@@ -120,10 +120,16 @@ class Workspace(QWidget):
             self.clients = self.config_manager.load_device_managers()
             if new_device:
                 self.status_tray.add_device(new_device["name"], new_device["address"])
+        print("clients", self.clients)
 
+    # remove device from device dictionary and then delete from config
     def remove_device(self, device_name):
+        loop = asyncio.get_event_loop()
+        disconnect_task = loop.create_task(self.clients[device_name].disconnect())
         if self.config_manager is not None:
             self.config_manager.remove_device(device_name)
+            self.clients = self.config_manager.load_device_managers()
+        print("clients ", self.clients)
 
     # ensure all devices have been disconnected
     def closeEvent(self, a0: QCloseEvent | None) -> None:

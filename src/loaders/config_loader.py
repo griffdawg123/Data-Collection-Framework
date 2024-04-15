@@ -53,6 +53,7 @@ class ConfigLoader():
         return devices
     
     def load_device_managers(self) -> dict[str, BleakClient]:
+        print("device configs: ", self.device_configs)
         device_loader = DeviceLoader(self.device_configs)
         return device_loader.get_devices()
     
@@ -70,29 +71,31 @@ class ConfigLoader():
             device_list = list(device_list)
             device_list.append(file_name)
             self.config["devices"] = device_list
+        self.device_configs.append(device_config)
         self.save_config()
 
     def load_device(self, device_path):
-        print(self.config["devices"])
         device_list = self.config["devices"]
         if device_list is not None:
             device_list = list(device_list)
             device_list.append(device_path.split("/")[-1].split(".")[0])
             self.config["devices"] = device_list
-        print(self.config["devices"])
+        self.device_configs = self.load_device_configs()
+        print(self.device_configs)
         self.save_config()
     
     def remove_device(self, device_name):
         device_list = self.config["devices"]
-        print("here")
         if device_list is not None:
             device_list=list(device_list)
             print(device_list)
             device_list.remove(format_config_name(device_name))
             self.config["devices"] = device_list
+        self.device_configs = list(filter(lambda config: config["name"] != device_name, self.device_configs))
         self.save_config()
         
 
 if __name__=="__main__":
-    loader = ConfigLoader("config/workspaces/new_workspace.config")
+    loader = ConfigLoader("config/workspaces/new_config.config")
     loader.save_device("Helo", "world")
+    print(loader.device_configs)
