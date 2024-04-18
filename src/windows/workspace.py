@@ -33,13 +33,28 @@ class Workspace(QWidget):
         self.showMaximized()
 
     def load_UI(self) -> None:
-        self.setWindowTitle(self.get_title())
-
+        self.header: QWidget = QWidget()
+        self.header_layout = QVBoxLayout()
         self.title: QLabel = QLabel()
         self.title.setText(string.capwords(self.get_title()))
         self.title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.title.setStyleSheet("border: 1px solid black; font-size: 40px;")
-        
+        self.header_layout.addWidget(self.title)
+
+        self.control_buttons = QWidget()
+        self.control_buttons.setFixedWidth(self.width()//2)
+        self.save_button = QPushButton("Save Setup")
+        self.play_button = QPushButton(">")
+        self.pause_button = QPushButton("||")
+        self.control_layout = QHBoxLayout()
+        self.control_layout.addWidget(self.save_button)
+        self.control_layout.addWidget(self.play_button)
+        self.control_layout.addWidget(self.pause_button)
+        self.control_buttons.setLayout(self.control_layout)
+        self.header_layout.addWidget(self.control_buttons)
+
+        self.header.setLayout(self.header_layout) 
+
         self.setup_column: QWidget = QWidget()
         self.setup_column.setStyleSheet("border: 1px solid black;")
         self.setup_column_label: QLabel = QLabel()
@@ -48,7 +63,6 @@ class Workspace(QWidget):
 
         self.plots = QLabel("Plots")
         self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
-        
         if self.config_manager is not None:
             self.clients = self.config_manager.load_device_managers()
         self.status_tray = StatusTray(self.clients, self.remove_device)
@@ -71,7 +85,7 @@ class Workspace(QWidget):
         self.setup_column.setLayout(self.setup_column_layout)
 
         self.title_layout: QVBoxLayout = QVBoxLayout()
-        self.title_layout.addWidget(self.title)
+        self.title_layout.addWidget(self.header)
 
         self.workspace_layout: QHBoxLayout = QHBoxLayout()
         self.workspace_layout.addWidget(self.setup_column)
