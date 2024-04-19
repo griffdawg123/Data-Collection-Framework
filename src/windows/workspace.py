@@ -14,6 +14,7 @@ from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
 from src.ble.ble_generators import NotifyThread, ReadThread
 from src.windows.new_device import NewDevice
+from src.widgets.graph_widget import PlotWidget
 
 class Workspace(QWidget):
     def __init__(self, logger: Logger, app: QApplication) -> None:
@@ -33,6 +34,10 @@ class Workspace(QWidget):
         self.showMaximized()
 
     def load_UI(self) -> None:
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+        self.status_tray = StatusTray(self.clients, self.remove_device)
+
         self.header: QWidget = QWidget()
         self.header_layout = QVBoxLayout()
         self.title: QLabel = QLabel()
@@ -61,11 +66,16 @@ class Workspace(QWidget):
         self.setup_column_label.setText("Setup Column")
         self.setup_column_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        self.plots = QLabel("Plots")
+        self.plots = QWidget()
+        self.plots_layout = QVBoxLayout()
+        self.graph = PlotWidget(self.clients)
+        self.plots_layout.addWidget(self.graph)
+        self.plots.setLayout(self.plots_layout)
         self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
-        if self.config_manager is not None:
-            self.clients = self.config_manager.load_device_managers()
-        self.status_tray = StatusTray(self.clients, self.remove_device)
+
+        self.save_button.clicked.connect(self.graph.set_plot_thread)
+        self.play_button.clicked.connect(self.graph.start)
+        self.pause_button.clicked.connect(self.graph.stop)
 
         self.new_device_button = QPushButton("New Device")
         self.new_device_button.clicked.connect(self.new_device)
