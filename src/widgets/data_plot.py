@@ -25,11 +25,15 @@ class DataPlot(pg.PlotWidget):
         super().__init__()
         self.counter = 0
         self.timer = QTimer()
-        self.timer.setInterval(int(1000/datarate))
         self.timer.timeout.connect(self.on_timeout)
-        self.data = Queue(maxsize=num_data_points)
         self.time_last = time.time()
         self.source = source
+        self.set_params(datarate, num_data_points, y_max, y_min)
+
+    def set_params(self, datarate: int = 60, num_data_points: int = 100, y_max: int = 10, y_min: int = 10):
+        print(f"setting params {datarate, num_data_points, y_max, y_min}")
+        self.timer.setInterval(int(1000/datarate))
+        self.data = Queue(maxsize=num_data_points)
         self.num_data_points = num_data_points
         [self.data.put(0) for _ in range(self.num_data_points)]
         self.y_max = y_max

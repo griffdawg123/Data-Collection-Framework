@@ -7,6 +7,7 @@ import string
 import asyncio
 
 from bleak import BleakClient
+from qasync import asyncClose
 from src.loaders.config_loader import ConfigLoader
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import RandomThread, SinThread
@@ -69,6 +70,7 @@ class Workspace(QWidget):
         self.plots = QWidget()
         self.plots_layout = QVBoxLayout()
         self.graph = PlotWidget(self.clients)
+        self.graph.set_plot_params(y_max=360, y_min=0)
         self.plots_layout.addWidget(self.graph)
         self.plots.setLayout(self.plots_layout)
         self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
@@ -155,17 +157,13 @@ class Workspace(QWidget):
             self.clients = self.config_manager.load_device_managers()
         print("clients ", self.clients)
 
-    # ensure all devices have been disconnected
-    def closeEvent(self, a0: QCloseEvent | None) -> None:
-        def set_disconnected(task, disconnected, i):
-            disconnected[i] = True
 
-        disconnected = [(not client.is_connected) for client in self.clients.values()]
-        loop = asyncio.get_event_loop()
-        disconnect_tasks = [(loop.create_task(client.disconnect())) for client in self.clients.values()]
-        for i, client in enumerate(self.clients.values()):
-            if client.is_connected:
-                disconnect_tasks[i].add_done_callback(lambda task: set_disconnected(task, disconnected, i))
-        while not all(disconnected):
-            continue
-        return super().closeEvent(a0)
+    async def disconnect_from_clients(self):
+        for client in self.clients.values():
+            await client.disconnect()
+
+
+    @asyncClose
+    async def closeEvent(self, event):
+        await self.disconnect_from_clients()
+

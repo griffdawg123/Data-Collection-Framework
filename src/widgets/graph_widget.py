@@ -150,6 +150,11 @@ class PlotWidget(QWidget):
         elif self.data_type == BLEDataType.NOTIFY:
             thread = NotifyThread(self.client, self.UUID)
         self.plot.set_source(thread)
+    
+    def set_plot_params(self, datarate: int = 60, num_data_points: int = 100, y_max: int = 10, y_min: int = 10):
+        print(f"setting params {datarate, num_data_points, y_max, y_min}")
+        self.plot.set_params(datarate, num_data_points, y_max, y_min)
+
 
 
 

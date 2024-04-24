@@ -19,6 +19,14 @@ if __name__=="__main__":
     logger.info("Starting Application")
     app = QApplication(sys.argv)
     event_loop = QEventLoop(app)
+
+    app_close_event = asyncio.Event()
+    app.aboutToQuit.connect(app_close_event.set)
     asyncio.set_event_loop(event_loop)
     workspace = Workspace(logger, app)
-    event_loop.run_forever()
+    with event_loop:
+        event_loop.run_until_complete(app_close_event.wait())
+
+    # pending = asyncio.all_tasks(event_loop)
+    # loop = asyncio.new_event_loop()
+    # loop.run_until_complete(asyncio.gather(*pending))
