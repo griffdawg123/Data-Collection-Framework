@@ -7,6 +7,7 @@ import string
 import asyncio
 
 from bleak import BleakClient
+from qasync import asyncClose
 from src.loaders.config_loader import ConfigLoader
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import RandomThread, SinThread
@@ -14,6 +15,7 @@ from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
 from src.ble.ble_generators import NotifyThread, ReadThread
 from src.windows.new_device import NewDevice
+from src.widgets.graph_widget import PlotWidget
 
 class Workspace(QWidget):
     def __init__(self, logger: Logger, app: QApplication) -> None:
@@ -33,25 +35,49 @@ class Workspace(QWidget):
         self.showMaximized()
 
     def load_UI(self) -> None:
-        self.setWindowTitle(self.get_title())
+        if self.config_manager is not None:
+            self.clients = self.config_manager.load_device_managers()
+        self.status_tray = StatusTray(self.clients, self.remove_device)
 
+        self.header: QWidget = QWidget()
+        self.header_layout = QVBoxLayout()
         self.title: QLabel = QLabel()
         self.title.setText(string.capwords(self.get_title()))
         self.title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.title.setStyleSheet("border: 1px solid black; font-size: 40px;")
-        
+        self.header_layout.addWidget(self.title)
+
+        self.control_buttons = QWidget()
+        self.control_buttons.setFixedWidth(self.width()//2)
+        self.save_button = QPushButton("Save Setup")
+        self.play_button = QPushButton(">")
+        self.pause_button = QPushButton("||")
+        self.control_layout = QHBoxLayout()
+        self.control_layout.addWidget(self.save_button)
+        self.control_layout.addWidget(self.play_button)
+        self.control_layout.addWidget(self.pause_button)
+        self.control_buttons.setLayout(self.control_layout)
+        self.header_layout.addWidget(self.control_buttons)
+
+        self.header.setLayout(self.header_layout) 
+
         self.setup_column: QWidget = QWidget()
         self.setup_column.setStyleSheet("border: 1px solid black;")
         self.setup_column_label: QLabel = QLabel()
         self.setup_column_label.setText("Setup Column")
         self.setup_column_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
-        self.plots = QLabel("Plots")
+        self.plots = QWidget()
+        self.plots_layout = QVBoxLayout()
+        self.graph = PlotWidget(self.clients)
+        self.graph.set_plot_params(y_max=360, y_min=0)
+        self.plots_layout.addWidget(self.graph)
+        self.plots.setLayout(self.plots_layout)
         self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
-        
-        if self.config_manager is not None:
-            self.clients = self.config_manager.load_device_managers()
-        self.status_tray = StatusTray(self.clients, self.remove_device)
+
+        self.save_button.clicked.connect(self.graph.set_plot_thread)
+        self.play_button.clicked.connect(self.graph.start)
+        self.pause_button.clicked.connect(self.graph.stop)
 
         self.new_device_button = QPushButton("New Device")
         self.new_device_button.clicked.connect(self.new_device)
@@ -71,7 +97,7 @@ class Workspace(QWidget):
         self.setup_column.setLayout(self.setup_column_layout)
 
         self.title_layout: QVBoxLayout = QVBoxLayout()
-        self.title_layout.addWidget(self.title)
+        self.title_layout.addWidget(self.header)
 
         self.workspace_layout: QHBoxLayout = QHBoxLayout()
         self.workspace_layout.addWidget(self.setup_column)
@@ -120,22 +146,24 @@ class Workspace(QWidget):
             self.clients = self.config_manager.load_device_managers()
             if new_device:
                 self.status_tray.add_device(new_device["name"], new_device["address"])
+        print("clients", self.clients)
 
+    # remove device from device dictionary and then delete from config
     def remove_device(self, device_name):
+        loop = asyncio.get_event_loop()
+        disconnect_task = loop.create_task(self.clients[device_name].disconnect())
         if self.config_manager is not None:
             self.config_manager.remove_device(device_name)
+            self.clients = self.config_manager.load_device_managers()
+        print("clients ", self.clients)
 
-    # ensure all devices have been disconnected
-    def closeEvent(self, a0: QCloseEvent | None) -> None:
-        def set_disconnected(task, disconnected, i):
-            disconnected[i] = True
 
-        disconnected = [(not client.is_connected) for client in self.clients.values()]
-        loop = asyncio.get_event_loop()
-        disconnect_tasks = [(loop.create_task(client.disconnect())) for client in self.clients.values()]
-        for i, client in enumerate(self.clients.values()):
-            if client.is_connected:
-                disconnect_tasks[i].add_done_callback(lambda task: set_disconnected(task, disconnected, i))
-        while not all(disconnected):
-            continue
-        return super().closeEvent(a0)
+    async def disconnect_from_clients(self):
+        for client in self.clients.values():
+            await client.disconnect()
+
+
+    @asyncClose
+    async def closeEvent(self, event):
+        await self.disconnect_from_clients()
+

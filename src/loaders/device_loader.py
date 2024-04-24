@@ -15,7 +15,8 @@ class DeviceLoader():
                 name = conf["name"]
             except KeyError:
                 raise ConfigError("Name field not found")
-            
+            except TypeError:
+                print("Type error on conf: ", conf)
             try:
                 address = conf["address"]
             except KeyError:
