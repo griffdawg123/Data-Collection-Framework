@@ -5,5 +5,5 @@ config/workspaces/*
 !config/workspaces
 logs/*
 !logs
-__pycache__/
+**/__pycache__/
 .vscode/
