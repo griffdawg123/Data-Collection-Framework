@@ -7,3 +7,4 @@ logs/*
 !logs
 **/__pycache__/
 .vscode/
+testing.py
