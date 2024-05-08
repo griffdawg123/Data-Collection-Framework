@@ -3,11 +3,12 @@ from PyQt6.QtWidgets import QApplication
 from src.windows.workspace import Workspace
 from qasync import QEventLoop
 import asyncio
+from src.logs.logs_setup import LoggerEnv
 
-def main():
+def main(env: LoggerEnv):
     # Create application and workspace window
     app = QApplication(sys.argv)
-    workspace = Workspace(app) 
+    workspace = Workspace(env) 
 
     # Extract event loop
     event_loop = QEventLoop(app)
@@ -21,4 +22,4 @@ def main():
 
 
 if __name__=="__main__":
-    main()
+    main(LoggerEnv.DEV)

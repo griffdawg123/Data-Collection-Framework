@@ -20,13 +20,13 @@ from src.widgets.graph_widget import PlotWidget
 from src.logs.logs_setup import LoggerEnv
 
 class Workspace(QWidget):
-    def __init__(self, app: QApplication) -> None:
+    def __init__(self, log_level: LoggerEnv) -> None:
         super().__init__()
-        self.app = app
         self.config_path: str = ""
-        self.config_manager = None
         self.clients = {}
-        self.logger = logging.getLogger(LoggerEnv.DEV.value)
+        self.logger = logging.getLogger(log_level)
+        self.config_manager = None
+        # calls read_config with the config path
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
         self.hide()
@@ -167,5 +167,6 @@ class Workspace(QWidget):
 
     @asyncClose
     async def closeEvent(self, event):
+        # TODO write config to file
         await self.disconnect_from_clients()
 
