@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict
+from typing import List, Dict, Optional
 import os
 
 from bleak import BleakClient
@@ -11,15 +11,39 @@ from src.helpers import format_config_name
 class ConfigLoader():
     def __init__(self, config_path: str) -> None:
         self.config_path = config_path
-
+        self.config = self.load_config()
+    # load configuration for workspace
     def load_config(self) -> Dict:
-        return {}
+        if not os.path.exists(self.config_path):
+            raise FileNotFoundError(f"Config Path: {self.config_path} does not exist")
 
+        with open(self.config_path, "r") as infile:
+            return json.loads(infile.read())
+
+
+    # save edited configuration at the end of a session
     def save_config(self, config_dict) -> None:
-        pass
+        self.config = config_dict
+        with open(self.config_path, "w") as outfile:
+            outfile.write(json.dumps(config_dict))
 
+    # load bleak clients defined by initial config file
     def load_devices(self) -> Dict[str, BleakClient]:
-        return {}
+        devices = self.config.get("devices")
+        if type(devices) != list:
+            raise ValueError("Config devices is not a list")
+        device_dict = {} 
+        for device_file_name in devices:
+            with open(f"config/devices/{format_config_name(device_file_name)}.config", "r") as infile:
+                device_conf = json.loads(infile.read())
+                device_dict[device_conf["name"]] = BleakClient(device_conf["address"]) 
+        return device_dict 
+
+    # save a device file when it is added to a workspace
+    def save_device(self, device_dict: Dict["str", "str"]) -> None:
+        file_name = format_config_name(device_dict["name"])
+        with open(f"config/devices/{file_name}", "w") as outfile:
+            outfile.write(json.dumps(device_dict)) 
 # class ConfigLoader():
 #     def __init__(self, config_path: str) -> None:
 #         # print(config_path)
