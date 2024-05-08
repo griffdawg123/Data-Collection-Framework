@@ -1,4 +1,5 @@
 from logging import Logger
+import logging
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication, QHBoxLayout, QFileDialog
 from PyQt6.QtCore import Qt
@@ -16,15 +17,16 @@ from src.windows.config_selection import ConfigSelection
 from src.ble.ble_generators import NotifyThread, ReadThread
 from src.windows.new_device import NewDevice
 from src.widgets.graph_widget import PlotWidget
+from src.logs.logs_setup import LoggerEnv
 
 class Workspace(QWidget):
-    def __init__(self, logger: Logger, app: QApplication) -> None:
+    def __init__(self, app: QApplication) -> None:
         super().__init__()
         self.app = app
         self.config_path: str = ""
         self.config_manager = None
         self.clients = {}
-        self.logger = logger
+        self.logger = logging.getLogger(LoggerEnv.DEV.value)
         self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
         self.config_window.show()
         self.hide()
