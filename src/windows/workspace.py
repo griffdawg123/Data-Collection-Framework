@@ -1,5 +1,6 @@
 from logging import Logger
 import logging
+from typing import Dict
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QVBoxLayout, QApplication, QHBoxLayout, QFileDialog
 from PyQt6.QtCore import Qt
@@ -9,9 +10,12 @@ import asyncio
 
 from bleak import BleakClient
 from qasync import asyncClose
+from src import helpers
 from src.loaders.config_loader import ConfigLoader
 from src.widgets.data_plot import DataPlot
 from src.ble.static_generators import RandomThread, SinThread
+from src.widgets.header import Header
+from src.widgets.setup_column import SetupColumn
 from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
 from src.ble.ble_generators import NotifyThread, ReadThread
@@ -23,51 +27,34 @@ class Workspace(QWidget):
     def __init__(self, log_level: LoggerEnv) -> None:
         super().__init__()
         self.config_path: str = ""
-        self.clients = {}
+        self.clients: Dict[str, BleakClient] = {}
         self.logger = logging.getLogger(log_level)
-        self.config_manager = None
-        # calls read_config with the config path
-        self.config_window: ConfigSelection = ConfigSelection(self.logger, self.read_config)
+        self.config_manager = ConfigLoader("src/loaders/default.config")
+        self.config = self.config_manager.load_config()
+        self.status_tray = StatusTray(self.remove_device)
+        self.header = QWidget()
+        self.setup_column = QWidget()
+
+        self.config_window: ConfigSelection = ConfigSelection(self.logger, self.create_config_manager)
         self.config_window.show()
         self.hide()
 
-    def read_config(self, config_path: str) -> None:
+    def create_config_manager(self, config_path: str) -> None:
         self.config_manager = ConfigLoader(config_path)
+        self.config = self.config_manager.load_config()
         self.load_UI()
         self.showMaximized()
 
     def load_UI(self) -> None:
-        if self.config_manager is not None:
-            self.clients = self.config_manager.load_device_managers()
-        self.status_tray = StatusTray(self.clients, self.remove_device)
-
-        self.header: QWidget = QWidget()
-        self.header_layout = QVBoxLayout()
-        self.title: QLabel = QLabel()
-        self.title.setText(string.capwords(self.get_title()))
-        self.title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        self.title.setStyleSheet("border: 1px solid black; font-size: 40px;")
-        self.header_layout.addWidget(self.title)
-
-        self.control_buttons = QWidget()
-        self.control_buttons.setFixedWidth(self.width()//2)
-        self.save_button = QPushButton("Save Setup")
-        self.play_button = QPushButton(">")
-        self.pause_button = QPushButton("||")
-        self.control_layout = QHBoxLayout()
-        self.control_layout.addWidget(self.save_button)
-        self.control_layout.addWidget(self.play_button)
-        self.control_layout.addWidget(self.pause_button)
-        self.control_buttons.setLayout(self.control_layout)
-        self.header_layout.addWidget(self.control_buttons)
-
-        self.header.setLayout(self.header_layout) 
-
-        self.setup_column: QWidget = QWidget()
-        self.setup_column.setStyleSheet("border: 1px solid black;")
-        self.setup_column_label: QLabel = QLabel()
-        self.setup_column_label.setText("Setup Column")
-        self.setup_column_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self.clients = self.config_manager.load_devices()
+        self.status_tray = StatusTray(self.remove_device, self.clients)
+        self.new_device_button = QPushButton("New Device")
+        self.new_device_button.clicked.connect(self.new_device)
+        self.load_device_button = QPushButton("Load Device")
+        self.load_device_button.clicked.connect(self.load_device)
+        self.restart_button = QPushButton()
+        self.restart_button.setText("Restart")
+        self.setup_column = SetupColumn(self.status_tray, self.new_device_button, self.load_device_button, self.restart_button)
 
         self.plots = QWidget()
         self.plots_layout = QVBoxLayout()
@@ -77,26 +64,8 @@ class Workspace(QWidget):
         self.plots.setLayout(self.plots_layout)
         self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
 
-        self.save_button.clicked.connect(self.graph.set_plot_thread)
-        self.play_button.clicked.connect(self.graph.start)
-        self.pause_button.clicked.connect(self.graph.stop)
-
-        self.new_device_button = QPushButton("New Device")
-        self.new_device_button.clicked.connect(self.new_device)
-
-        self.load_device_button = QPushButton("Load Device")
-        self.load_device_button.clicked.connect(self.load_device)
-
-        self.restart_button = QPushButton()
-        self.restart_button.setText("Restart")
-        
-        self.setup_column_layout = QVBoxLayout()
-        self.setup_column_layout.addWidget(self.setup_column_label)
-        self.setup_column_layout.addWidget(self.status_tray)
-        self.setup_column_layout.addWidget(self.new_device_button)
-        self.setup_column_layout.addWidget(self.load_device_button)
-        self.setup_column_layout.addWidget(self.restart_button)
-        self.setup_column.setLayout(self.setup_column_layout)
+        self.header = Header(self.config_manager.get_title())
+        self.header.setup_buttons(self.graph.set_plot_thread, self.graph.start, self.graph.stop)
 
         self.title_layout: QVBoxLayout = QVBoxLayout()
         self.title_layout.addWidget(self.header)
@@ -115,58 +84,58 @@ class Workspace(QWidget):
 
         self.setLayout(self.title_layout)
 
-    def load_config(self) -> None:
-        self.config_window = ConfigSelection(self.logger, self.read_config)
-        self.config_window.show()
-        self.hide()
+    def add_device(self, conf):
+        client = BleakClient(conf["address"])
+        self.clients[conf["name"]] = client 
+        self.add_device_to_conf(conf["name"])
+        self.status_tray.add_device(conf["name"], client)
 
-    def get_title(self) -> str:
-        if self.config_manager is None:
-            return "Data Acquisition Framework"
-        else:
-            return self.config_manager.get_config_name()
-        
+
+    def add_device_to_conf(self, device_name):
+        devices = self.config["devices"]
+        devices.append(helpers.format_config_name(device_name))
+        self.config["devices"] = devices
+
+    def remove_device_from_conf(self, device_name):
+        devices = self.config["devices"]
+        devices.remove(helpers.format_config_name(device_name))
+        self.config["devices"] = devices
+
+    # create new device from input
+    # create new config file and add name to config
     def new_device(self) -> None:
         new_dialog = NewDevice()
         if new_dialog.exec():
             name, address = new_dialog.get_text()
-            if self.config_manager is not None:
-                self.config_manager.save_device(name, address)
-        if self.config_manager is not None:
-            self.clients = self.config_manager.load_device_managers()
-            self.status_tray.add_device(name, address)
-
+            device_config = {
+                "name" : name,
+                "address" : address
+            }
+            self.config_manager.save_device(device_config)
+            self.add_device(device_config)
+    # load device from existing file
+    # add file name to config
     def load_device(self) -> None:
         config_path, _ = QFileDialog.getOpenFileName(self,self.tr("Open Config"), "./config/devices/", self.tr("Config Files (*.config)"))
         new_device = {}
         if config_path:
-            if self.config_manager is not None:
-                self.config_manager.load_device(config_path)
-            with open(config_path, "r") as infile:
+            with open(config_path, "r", encoding="utf8") as infile:
                 new_device = json.loads(infile.read())
-        if self.config_manager is not None:
-            self.clients = self.config_manager.load_device_managers()
-            if new_device:
-                self.status_tray.add_device(new_device["name"], new_device["address"])
-        print("clients", self.clients)
+                self.add_device(new_device)
 
-    # remove device from device dictionary and then delete from config
+    # remove device from config dict and dict 
     def remove_device(self, device_name):
         loop = asyncio.get_event_loop()
         disconnect_task = loop.create_task(self.clients[device_name].disconnect())
-        if self.config_manager is not None:
-            self.config_manager.remove_device(device_name)
-            self.clients = self.config_manager.load_device_managers()
-        print("clients ", self.clients)
-
+        del self.clients[device_name]
+        self.remove_device_from_conf(device_name)
 
     async def disconnect_from_clients(self):
         for client in self.clients.values():
             await client.disconnect()
 
-
     @asyncClose
     async def closeEvent(self, event):
-        # TODO write config to file
+        self.config_manager.save_config(self.config)
         await self.disconnect_from_clients()
 
