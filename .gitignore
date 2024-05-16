@@ -1,8 +1,7 @@
 venv/*
 config/devices/*
 config/workspaces/*
-!config/devices
-!config/workspaces
+!config/
 logs/*
 !logs
 **/__pycache__/
