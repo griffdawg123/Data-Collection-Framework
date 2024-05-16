@@ -29,7 +29,8 @@ class Workspace(QWidget):
         self.config_path: str = ""
         self.clients: Dict[str, BleakClient] = {}
         self.logger = logging.getLogger(log_level)
-        self.config_manager = ConfigLoader("src/loaders/default.config")
+        self.logger.info("Logger Enabled")
+        self.config_manager = ConfigLoader("src/loaders/default.config", self.logger)
         self.config = self.config_manager.load_config()
         self.status_tray = StatusTray(self.remove_device)
         self.header = QWidget()
@@ -40,7 +41,7 @@ class Workspace(QWidget):
         self.hide()
 
     def create_config_manager(self, config_path: str) -> None:
-        self.config_manager = ConfigLoader(config_path)
+        self.config_manager = ConfigLoader(config_path, self.logger)
         self.config = self.config_manager.load_config()
         self.load_UI()
         self.showMaximized()
@@ -83,13 +84,13 @@ class Workspace(QWidget):
         self.title_layout.setStretch(1, 9)
 
         self.setLayout(self.title_layout)
+        self.logger.info("UI Loaded")
 
     def add_device(self, conf):
         client = BleakClient(conf["address"])
         self.clients[conf["name"]] = client 
         self.add_device_to_conf(conf["name"])
         self.status_tray.add_device(conf["name"], client)
-
 
     def add_device_to_conf(self, device_name):
         devices = self.config["devices"]
@@ -112,7 +113,9 @@ class Workspace(QWidget):
                 "address" : address
             }
             self.config_manager.save_device(device_config)
+            self.logger.info(f"New device with name {name} and address {address}")
             self.add_device(device_config)
+
     # load device from existing file
     # add file name to config
     def load_device(self) -> None:
@@ -122,6 +125,7 @@ class Workspace(QWidget):
             with open(config_path, "r", encoding="utf8") as infile:
                 new_device = json.loads(infile.read())
                 self.add_device(new_device)
+                self.logger.info(f"Loaded device with name {new_device["name"]} and address {new_device["address"]}")
 
     # remove device from config dict and dict 
     def remove_device(self, device_name):
@@ -129,8 +133,10 @@ class Workspace(QWidget):
         disconnect_task = loop.create_task(self.clients[device_name].disconnect())
         del self.clients[device_name]
         self.remove_device_from_conf(device_name)
+        self.logger.info(f"Removing device {device_name}")
 
     async def disconnect_from_clients(self):
+        self.logger.info(f"Disconnecting from all clients")
         for client in self.clients.values():
             await client.disconnect()
 

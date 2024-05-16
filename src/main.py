@@ -3,9 +3,11 @@ from PyQt6.QtWidgets import QApplication
 from src.windows.workspace import Workspace
 from qasync import QEventLoop
 import asyncio
-from src.logs.logs_setup import LoggerEnv
+from src.logs.logs_setup import LoggerEnv, init_logging
 
 def main(env: LoggerEnv):
+    init_logging()
+
     # Create application and workspace window
     app = QApplication(sys.argv)
     workspace = Workspace(env) 
