@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 import pytest
 # from pytest import fixture, raises
 from src.loaders.config_loader import ConfigLoader
 from bleak import BleakClient
+
+from src.logs.logs_setup import LoggerEnv
 
 TEST_CONFIG = {
         "name" : "test workspace",
@@ -15,11 +18,14 @@ TEST_DEVICE = {
     "address" : "test address"
 }
 
+LOGGER = logging.getLogger(LoggerEnv.DEV)
 
 @pytest.fixture(scope="session", autouse=True)
 def create_config(request):
     with open("testing/test.config", "w+") as outfile:
         outfile.write(json.dumps(TEST_CONFIG))
+    if not os.path.exists("config/devices/"):
+        os.makedirs("config/devices/")
     with open("config/devices/test_device.config", "w+") as outfile:
         outfile.write(json.dumps(TEST_DEVICE))
     request.addfinalizer(remove_config) # type: ignore
@@ -32,16 +38,16 @@ def test_config_fixture():
     assert os.path.isfile("testing/test.config")
 
 def test_load_config_exists():
-    confloader = ConfigLoader("testing/test.config")
+    confloader = ConfigLoader("testing/test.config", LOGGER)
     config = confloader.load_config()
     assert config == TEST_CONFIG
 
 def test_load_config_not_exists():
     with pytest.raises(FileNotFoundError):
-        ConfigLoader("doesnt/exist.config")
+        ConfigLoader("doesnt/exist.config", LOGGER)
 
 def test_load_devices():
-    confloader = ConfigLoader("testing/test.config")
+    confloader = ConfigLoader("testing/test.config", LOGGER)
     devices = confloader.load_devices()
     assert list(devices.keys()) == [TEST_DEVICE.get("name")]
     clients = devices.values()
@@ -51,7 +57,7 @@ def test_load_devices():
     assert client.address == TEST_DEVICE.get("address")
 
 def test_save_config():
-    confloader = ConfigLoader("testing/test.config")
+    confloader = ConfigLoader("testing/test.config", LOGGER)
     config = confloader.load_config()
     devices = config.get("devices")
     assert type(devices) == list
