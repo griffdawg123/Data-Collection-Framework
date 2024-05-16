@@ -1,28 +1,27 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget, QMainWindow, QPushButton, QLabel, QVBoxLayout, QWidget
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QApplication
 from src.windows.workspace import Workspace
-import logging
-import time
 from qasync import QEventLoop
 import asyncio
+from src.logs.logs_setup import LoggerEnv, init_logging
 
-DEBUG = True
-LOGGING = True
+def main(env: LoggerEnv):
+    init_logging()
 
-log_name: str = "debug" if DEBUG else str(time.time())
-
-if __name__=="__main__":
+    # Create application and workspace window
     app = QApplication(sys.argv)
-    event_loop = QEventLoop(app)
+    workspace = Workspace(env) 
 
+    # Extract event loop
+    event_loop = QEventLoop(app)
+    asyncio.set_event_loop(event_loop)
+
+    # Run app
     app_close_event = asyncio.Event()
     app.aboutToQuit.connect(app_close_event.set)
-    asyncio.set_event_loop(event_loop)
-    workspace = Workspace(app)
     with event_loop:
         event_loop.run_until_complete(app_close_event.wait())
 
-    # pending = asyncio.all_tasks(event_loop)
-    # loop = asyncio.new_event_loop()
-    # loop.run_until_complete(asyncio.gather(*pending))
+
+if __name__=="__main__":
+    main(LoggerEnv.DEV)

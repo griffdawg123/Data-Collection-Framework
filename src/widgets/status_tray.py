@@ -10,7 +10,7 @@ from src.widgets.ble_status import BLEStatus
 
 
 class StatusTray(QScrollArea):
-    def __init__(self, clients: dict[str, BleakClient], remove_device) -> None:
+    def __init__(self, remove_device, clients: dict[str, BleakClient] = {}) -> None:
         super().__init__()
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -46,8 +46,8 @@ class StatusTray(QScrollArea):
         self.remove_device_config(device_name)
         self.set_layout_widget()
 
-    def add_device(self, device_name, device_address):
-        new_status = BLEStatus(device_name, BleakClient(device_address), self.remove_device, parent=self)
+    def add_device(self, device_name, device):
+        new_status = BLEStatus(device_name, device, self.remove_device, parent=self)
         self.statuses[device_name] = new_status
         # self.vbox.removeWidget(self.stretch)
         self.vbox.insertWidget(self.vbox.count() -1 , new_status)
