@@ -24,4 +24,4 @@ def main(env: LoggerEnv):
 
 
 if __name__=="__main__":
-    main(LoggerEnv.DEV)
+    main(LoggerEnv.STAG)

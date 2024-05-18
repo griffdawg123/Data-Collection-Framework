@@ -21,6 +21,10 @@ loggers:
     level: DEBUG
     handlers: [console]
     propagate: False
+  staging:
+    level: INFO
+    handlers: [console]
+    propagate: False
   prod:
     level: WARNING
     handlers: [file]
