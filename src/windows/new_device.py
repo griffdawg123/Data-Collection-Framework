@@ -49,7 +49,7 @@ class NewDevice(QDialog):
                 self.set_entries("", "")
             else:
                 d, _ = self.devices[idx-1]
-                self.set_entries(helpers.format_config_name(d.name)+".config", d.address)
+                self.set_entries(helpers.format_config_name(d.name), d.address)
         self.search_combobox.currentIndexChanged.connect(lambda: index_changed(self.search_combobox.currentIndex()))
 
     def get_text(self):

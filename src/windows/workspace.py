@@ -48,6 +48,7 @@ class Workspace(QWidget):
 
     def load_UI(self) -> None:
         self.clients = self.config_manager.load_devices()
+        self.config["devices"] = [helpers.format_config_name(device_name) for device_name in self.clients.keys()]
         self.status_tray = StatusTray(self.remove_device, self.clients)
         self.new_device_button = QPushButton("New Device")
         self.new_device_button.clicked.connect(self.new_device)
@@ -141,7 +142,6 @@ class Workspace(QWidget):
             await client.disconnect()
 
     @asyncClose
-    async def closeEvent(self, event):
+    async def closeEvent(self, a0):
         self.config_manager.save_config(self.config)
         await self.disconnect_from_clients()
-
