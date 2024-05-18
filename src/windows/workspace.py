@@ -182,6 +182,6 @@ class Workspace(QWidget):
             await client.disconnect()
 
     @asyncClose
-    async def closeEvent(self, a0) -> None:
+    async def closeEvent(self, _) -> None: # pyright: ignore[reportIncompatibleMethodOverride]
         self.config_manager.save_config(self.config)
         await self.disconnect_from_clients()

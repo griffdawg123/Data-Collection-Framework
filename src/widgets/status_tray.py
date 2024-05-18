@@ -1,10 +1,7 @@
-from typing import List
-from PyQt6.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QApplication
+from PyQt6.QtWidgets import QScrollArea, QWidget, QVBoxLayout
 from PyQt6.QtCore import Qt
-from qasync import QEventLoop
 from bleak import BleakClient
 import asyncio
-import sys
 
 from src.widgets.ble_status import BLEStatus
 
@@ -37,21 +34,17 @@ class StatusTray(QScrollArea):
             self.statuses[label] = status
         
     def remove_device(self, device_name):
-        # print(f"removing {device_name}")
         self.scroll_widget.layout()
         self.vbox.removeWidget(self.statuses[device_name])
         self.statuses[device_name].deleteLater()
         self.statuses.pop(device_name)
-        # self.clients.pop(device_name)
         self.remove_device_config(device_name)
         self.set_layout_widget()
 
     def add_device(self, device_name, device):
         new_status = BLEStatus(device_name, device, self.remove_device, parent=self)
         self.statuses[device_name] = new_status
-        # self.vbox.removeWidget(self.stretch)
         self.vbox.insertWidget(self.vbox.count() -1 , new_status)
-        # self.vbox.addStretch(1)
         self.set_layout_widget()
 
     def set_layout_widget(self):
