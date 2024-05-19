@@ -1,33 +1,23 @@
-from logging import Logger
 import logging
 from typing import Dict
-from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QWidget,
-    QLabel,
-    QGridLayout,
     QPushButton,
     QVBoxLayout,
-    QApplication,
     QHBoxLayout,
     QFileDialog
 )
-from PyQt6.QtCore import Qt
 import json
-import string
 import asyncio
 
 from bleak import BleakClient
 from qasync import asyncClose
 from src import helpers
 from src.loaders.config_loader import ConfigLoader
-from src.widgets.data_plot import DataPlot
-from src.ble.static_generators import RandomThread, SinThread
 from src.widgets.header import Header
 from src.widgets.setup_column import SetupColumn
 from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
-from src.ble.ble_generators import NotifyThread, ReadThread
 from src.windows.new_device import NewDevice
 from src.widgets.graph_widget import PlotWidget
 from src.logs.logs_setup import LoggerEnv
@@ -53,13 +43,15 @@ class Workspace(QWidget):
         )
         self.config_window.show()
         self.hide()
-
+    
+    # creates conflict manager
     def create_config_manager(self, config_path: str) -> None:
         self.config_manager = ConfigLoader(config_path, self.logger)
         self.config = self.config_manager.load_config()
         self.load_UI()
         self.showMaximized()
 
+    # initialises UI
     def load_UI(self) -> None:
         self.clients = self.config_manager.load_devices()
         self.config["devices"] = [
@@ -137,7 +129,8 @@ class Workspace(QWidget):
             name, address = new_dialog.get_text()
             device_config = {
                 "name": name,
-                "address": address
+                "address": address,
+                "services": {}
             }
             self.config_manager.save_device(device_config)
             self.logger.info(

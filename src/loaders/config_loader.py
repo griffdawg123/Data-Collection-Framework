@@ -94,5 +94,11 @@ class ConfigLoader():
             outfile.write(json.dumps(device_dict))
         self.logger.info(f"Saved device {device_dict["name"]} with address {device_dict["address"]} to {file_name}.config")
 
+    def load_device_config(self, device_name: str) -> Dict:
+        file_name = format_config_name(device_name)
+        with open(f"config/devices/{file_name}.config", "r", encoding='utf-8') as infile:
+            self.logger.info(f"Loaded device {device_name}")
+            return json.loads(infile.read())
+
     def get_title(self) -> str:
         return self.config["name"]
