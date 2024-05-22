@@ -1,4 +1,5 @@
 import time
+from typing import Optional
 from PyQt6.QtCore import QTimer, pyqtSignal, pyqtSlot, QThread
 from PyQt6.QtWidgets import QApplication, QWidget
 from bleak import BleakClient
@@ -21,7 +22,7 @@ class DataPlot(pg.PlotWidget):
     framerate : # frames / sec
     """
 
-    def __init__(self, source: DataThread = None, datarate: int = 60, num_data_points: int = 100, y_max: int = 10, y_min: int = 10):
+    def __init__(self, source: Optional[DataThread] = None, datarate: int = 60, num_data_points: int = 100, y_max: int = 10, y_min: int = 10):
         super().__init__()
         self.counter = 0
         self.timer = QTimer()

@@ -1,3 +1,4 @@
+from typing import Dict
 from PyQt6.QtWidgets import QScrollArea, QWidget, QVBoxLayout
 from PyQt6.QtCore import Qt
 from bleak import BleakClient
@@ -41,6 +42,12 @@ class StatusTray(QScrollArea):
         self.remove_device_config(device_name)
         self.set_layout_widget()
 
+    def set_clients(self, clients: Dict[str, BleakClient]):
+        print(f"Clients: {clients}")
+        for name, client in clients.items():
+            self.add_device(name, client)
+        self.clients = clients
+
     def add_device(self, device_name, device):
         new_status = BLEStatus(device_name, device, self.remove_device, parent=self)
         self.statuses[device_name] = new_status
@@ -51,3 +58,6 @@ class StatusTray(QScrollArea):
         self.scroll_widget.setLayout(self.vbox)
         self.setWidget(self.scroll_widget)
         self.update()
+    
+    def set_remove_func(self, func):
+        self.remove_device_config = func

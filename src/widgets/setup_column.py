@@ -15,4 +15,3 @@ class SetupColumn(QWidget):
         self.c_layout.addWidget(load_button)
         self.c_layout.addWidget(restart_button)
         self.setLayout(self.c_layout)
-
