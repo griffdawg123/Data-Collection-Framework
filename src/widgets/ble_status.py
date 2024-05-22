@@ -5,6 +5,8 @@ import sys
 from qasync import QEventLoop
 from bleak import BleakClient
 
+from src.ble import ble_scanner
+from src.loaders.config_loader import ConfigLoader
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
@@ -51,6 +53,7 @@ class BLEStatus(QWidget):
         event_loop = asyncio.get_event_loop()
         connect_task = event_loop.create_task(self.client.connect())
         connect_task.add_done_callback(self.set_status)
+        # when device connects, we want to update its config file with services
 
     def set_status(self, task: asyncio.Task):
         exp = task.exception()
@@ -65,12 +68,12 @@ class BLEStatus(QWidget):
             self.current_status = LEDColor.IDLE
         self.update()
 
-    def update(self):
+    def update(self): # pyright: ignore[reportIncompatibleMethodOverride]
         self.stat_label.setText(self.current_status.name)
         self.stat_led.set_status(self.current_status)
         super().update()
 
-    async def disconnect(self):
+    async def disconnect(self): # pyright: ignore[reportIncompatibleMethodOverride]
         await self.client.disconnect()
 
 

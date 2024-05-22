@@ -71,9 +71,14 @@ class ConfigLoader():
         device_dict = {}
         for device_file_name in devices:
             device_config_path = f"config/devices/{format_config_name(device_file_name)}.config"
+            if not os.path.exists(device_config_path):
+                self.logger.warning(f"{device_file_name} does not exist")
+                devices.remove(device_file_name)
+                continue
             with open(device_config_path, "r", encoding="utf8") as infile:
                 device_conf = json.loads(infile.read())
                 device_dict[device_conf["name"]] = BleakClient(device_conf["address"])
+        self.config["devices"] = devices
         self.logger.info(f"Loaded devices {", ".join(devices)}")
         return device_dict
 
@@ -85,9 +90,15 @@ class ConfigLoader():
             device_dict (Dict[str, str]): Device dict with name and address values
         """
         file_name = format_config_name(device_dict["name"])
-        with open(f"config/devices/{file_name}", "w", encoding='utf-8') as outfile:
+        with open(f"config/devices/{file_name}.config", "w", encoding='utf-8') as outfile:
             outfile.write(json.dumps(device_dict))
         self.logger.info(f"Saved device {device_dict["name"]} with address {device_dict["address"]} to {file_name}.config")
+
+    def load_device_config(self, device_name: str) -> Dict:
+        file_name = format_config_name(device_name)
+        with open(f"config/devices/{file_name}.config", "r", encoding='utf-8') as infile:
+            self.logger.info(f"Loaded device {device_name}")
+            return json.loads(infile.read())
 
     def get_title(self) -> str:
         return self.config["name"]

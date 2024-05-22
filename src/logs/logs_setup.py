@@ -6,6 +6,7 @@ from enum import StrEnum
 class LoggerEnv(StrEnum):
     DEV = "dev"
     PROD ="prod"
+    STAG = "staging"
 
 def init_logging():
     conf_dict = None
