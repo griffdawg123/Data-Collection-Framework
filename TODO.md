@@ -3,6 +3,7 @@
 - [ ] Plots widget
 ## Backlog
 - [ ] Individual plot widget
+- [ ] Reimplement restart function
 ## Major Features (To Be Split into Tasks)
 - [x] Graph Displaying
 - [ ] Multiple Device Locking - check bleak docs
