@@ -13,6 +13,34 @@ import asyncio
 from src.ble.threads import DataThread
 from src.ble.ble_generators import NotifyThread
 
+'''
+plots : [
+    {
+        plot_name: "name",
+        sources : [
+            {
+                device_name: "Thingy"
+                service_name: "Battery Service"
+                pen_color: "FFFF00"
+                encoding:  [
+                    {
+                        "length" : 32,
+                        "signed" : true,
+                        "remainder": 16,
+                        }
+                    ]
+                },
+                data_points: [0],
+            ],
+        data_rate: 60,
+        num_data_points: 100,
+        y_max: 100,
+        y_min: 0,
+        x_label: "Time"
+        y_label: "m/s"
+    },
+]
+'''
 class DataPlot(pg.PlotWidget):
 
     frame_changed = pyqtSignal(int)
@@ -73,6 +101,12 @@ class DataPlot(pg.PlotWidget):
             self.plot = p_item.plot([], [], pen=pg.mkPen("r", width=2))
         # self.frame_changed.connect(self.frame_rate)
 
+    '''
+    Currently, on timeout:
+        We increase counter and emit the counter value to the source 
+        The source will then emit the value it currently has which will then 
+        be added to the queue to be displayed in the graph
+    '''
     @pyqtSlot(float)
     def generate_data(self, i):
         self.data.get()

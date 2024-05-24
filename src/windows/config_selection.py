@@ -28,13 +28,13 @@ class ConfigSelection(QWidget):
         self.load_button.clicked.connect(self.load_clicked)
 
 
-        self.layout: QVBoxLayout = QVBoxLayout()
-        self.layout.addStretch()
-        self.layout.addWidget(self.new_button)
-        self.layout.addWidget(self.load_button)
-        self.layout.addStretch()
-        self.layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setLayout(self.layout)
+        layout: QVBoxLayout = QVBoxLayout()
+        layout.addStretch()
+        layout.addWidget(self.new_button)
+        layout.addWidget(self.load_button)
+        layout.addStretch()
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setLayout(layout)
 
     def new_clicked(self):
         self.logger.debug("New Workspace Button Clicked")
@@ -47,6 +47,7 @@ class ConfigSelection(QWidget):
                 json_config = {}
                 json_config["name"] = new_workspace_filename
                 json_config["devices"] = []
+                json_config["plots"] = []
                 new_file.write(json.dumps(json_config))
             self.logger.info(f"New workspace created with name: {new_workspace_filename}")
             self.config_url = f"config/workspaces/{src.helpers.format_config_name(new_workspace_filename)}.config"

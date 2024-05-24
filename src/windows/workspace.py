@@ -77,6 +77,8 @@ class Workspace(QWidget):
         )
         
         # Plot initialization
+        self.plots = PlotTray()
+        self.plots.set_plots(self.config["plots"])
         # self.plots = QWidget()
         # self.plots_layout = QVBoxLayout()
         # self.graph = PlotWidget(self.clients)

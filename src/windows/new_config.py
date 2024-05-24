@@ -25,12 +25,12 @@ class NewConfig(QDialog):
         self.button_box.rejected.connect(self.reject)
         self.toggle_ok(False)
 
-        self.layout: QBoxLayout = QVBoxLayout()
-        self.layout.addWidget(self.label)
-        self.layout.addWidget(self.line_input)
-        self.layout.addWidget(self.button_box)
+        layout: QVBoxLayout = QVBoxLayout()
+        layout.addWidget(self.label)
+        layout.addWidget(self.line_input)
+        layout.addWidget(self.button_box)
 
-        self.setLayout(self.layout)
+        self.setLayout(layout)
 
     def set_label(self, text_input: str) -> None:
         self.text = text_input
