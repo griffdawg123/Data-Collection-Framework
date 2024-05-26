@@ -1,7 +1,8 @@
+import functools
 import time
-from typing import Optional
+from typing import Dict, Optional
 from PyQt6.QtCore import QTimer, pyqtSignal, pyqtSlot, QThread
-from PyQt6.QtWidgets import QApplication, QWidget
+from PyQt6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 from bleak import BleakClient
 from queue import Queue
 import pyqtgraph as pg
@@ -41,6 +42,48 @@ plots : [
     },
 ]
 '''
+class TrayItem(QWidget):
+        
+    delete_me = pyqtSignal(QWidget)
+
+    def __init__(self, config: Dict, devices: Dict) -> None:
+        super().__init__()
+        self.config = config
+        self.devices = devices
+
+        self.remove_button = QPushButton("Remove Plot")
+        self.edit_config_button = QPushButton("Edit Config")
+
+        self.remove_button.clicked.connect(functools.partial(self.delete_me.emit, self))
+        self.edit_config_button.clicked.connect(self.edit_config)
+
+        self.plot = DataPlot()
+        self.init_UI()
+
+    def init_UI(self):
+        buttons = QWidget()
+        button_layout = QVBoxLayout()
+        button_layout.addWidget(self.remove_button)
+        button_layout.addWidget(self.edit_config_button)
+        buttons.setLayout(button_layout)
+
+        widget_layout = QHBoxLayout()
+        widget_layout.addWidget(self.plot)
+        widget_layout.addWidget(buttons)
+        self.setLayout(widget_layout)
+
+    def edit_config(self):
+        print("unimplemented")
+
+    def set_clients(self, clients):
+        self.devices = clients
+
+    def add_client(self, name, client):
+        self.devices[name] = client
+
+    def remove_client(self, name):
+        del self.devices[name]
+
 class DataPlot(pg.PlotWidget):
 
     frame_changed = pyqtSignal(int)
@@ -141,13 +184,14 @@ if __name__ == "__main__":
     asyncio.set_event_loop(loop)
     # mw = QWidget()
     # mw.show()
-    client = BleakClient("F1:EC:95:17:0A:62")
-    print("Connecting to client")
-    connection_task = loop.create_task(client.connect())
-    connection_task.add_done_callback(lambda _: print("connected"))
-    UUID = "EF680409-9B35-4933-9B10-52FFA9740042"
-    thread = NotifyThread(client, UUID)
-    pw = DataPlot(thread)
+    # client = BleakClient("F1:EC:95:17:0A:62")
+    # print("Connecting to client")
+    # connection_task = loop.create_task(client.connect())
+    # connection_task.add_done_callback(lambda _: print("connected"))
+    # UUID = "EF680409-9B35-4933-9B10-52FFA9740042"
+    # thread = NotifyThread(client, UUID)
+    # pw = DataPlot(thread)
+    pw = TrayItem({}, {})
     pw.show()
     loop.run_forever()
     # sys.exit(app.exec())

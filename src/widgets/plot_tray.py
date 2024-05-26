@@ -3,11 +3,14 @@ from PyQt6.QtWidgets import QScrollArea, QWidget, QVBoxLayout
 from PyQt6.QtCore import Qt
 
 from src.widgets.control_buttons import ControlButtons
-from src.widgets.data_plot import DataPlot
+from src.widgets.data_plot import DataPlot, TrayItem
 
 class PlotTray(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, clients: Dict = {}) -> None:
         super().__init__()
+        self.clients = clients
+        self.plots = set()
+
         self.scroll_area = QScrollArea()
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -31,23 +34,30 @@ class PlotTray(QWidget):
 
     # add a new plot to the tray when the new plot button is clicked
     def add_plot(self, config: Dict, layout: QVBoxLayout):
-        new_plot = DataPlot(config)
+        new_plot = TrayItem(config, self.clients)
         layout.addWidget(new_plot)
 
     # remove a new plot when a button is clicked
-    def remove_plot(self):
-        return
+    def remove_plot(self, plot: TrayItem):
+        self.plots.remove(plot)
+        self.update()
 
     # initially setting of clients when workspace is loaded
-    def set_clients(self):
-        return
+    def set_clients(self, clients):
+        self.clients = clients
+        for plot in self.plots:
+            plot.set_clients(clients)
 
     # add a new client when a new one is added to the workspace
-    def add_client(self):
-        return
+    def add_client(self, name, client):
+        self.clients[name] = client
+        for plot in self.plots:
+            plot.add_client(name, client)
 
     # remove a client from all plots when it is removed from the workspace
-    def remove_client(self):
-        return
+    def remove_client(self, name):
+        del self.clients[name]
+        for plot in self.plots:
+            plot.remove_client(name)
 
     

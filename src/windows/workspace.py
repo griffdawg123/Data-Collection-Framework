@@ -10,6 +10,7 @@ import json
 import asyncio
 
 from bleak import BleakClient
+
 from qasync import asyncClose
 from src import helpers
 from src.loaders.config_loader import ConfigLoader
@@ -77,7 +78,7 @@ class Workspace(QWidget):
         )
         
         # Plot initialization
-        self.plots = PlotTray()
+        self.plots = PlotTray(self.clients)
         self.plots.set_plots(self.config["plots"])
         # self.plots = QWidget()
         # self.plots_layout = QVBoxLayout()

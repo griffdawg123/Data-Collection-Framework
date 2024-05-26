@@ -6,6 +6,7 @@
 - [ ] Individual plot widget - Implement with coroutine method & new bit parsing
 - [ ] Reimplement restart function
 - [ ] Rewrite Data Collection using coroutines
+- [ ] Allow for in application rewriting of plot config 
 ## Major Features (To Be Split into Tasks)
 - [x] Graph Displaying
 - [ ] Multiple Device Locking - check bleak docs
