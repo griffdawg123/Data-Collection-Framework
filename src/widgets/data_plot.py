@@ -1,4 +1,5 @@
 import functools
+import math
 import time
 from typing import Dict, Optional
 from PyQt6.QtCore import QTimer, pyqtSignal, pyqtSlot, QThread
@@ -11,8 +12,10 @@ import sys
 from qasync import QEventLoop
 import asyncio
 
+from src.ble.static_generators import coro
 from src.ble.threads import DataThread
 from src.ble.ble_generators import NotifyThread
+from src.helpers import hex_to_rgb
 
 '''
 plots : [
@@ -179,20 +182,103 @@ class DataPlot(pg.PlotWidget):
         self.source.send_value(value)
 
 if __name__ == "__main__":
+    config = {
+            "plot_name": "name",
+            "sources" : [
+                {
+                    "device_name": "Thingy",
+                    "service_name": "Battery Service",
+                    "pen_color": "FFFF00",
+                    "encoding":  [
+                        {
+                            "length" : 32,
+                            "signed" : True,
+                            "remainder": 16,
+                            },
+                        ],
+                    "data_points": [0],
+                    },
+                ],
+            "data_rate": 60,
+            "num_data_points": 100,
+            "y_max": 1,
+            "y_min": -1,
+            "x_label": "time",
+            "x_units": "s",
+            "y_label": "speed",
+            "y_units": "m/s",
+            }
+    source = config["sources"][0]
     app = QApplication(sys.argv)
-    loop = QEventLoop(app)
-    asyncio.set_event_loop(loop)
-    # mw = QWidget()
-    # mw.show()
-    # client = BleakClient("F1:EC:95:17:0A:62")
-    # print("Connecting to client")
-    # connection_task = loop.create_task(client.connect())
-    # connection_task.add_done_callback(lambda _: print("connected"))
-    # UUID = "EF680409-9B35-4933-9B10-52FFA9740042"
-    # thread = NotifyThread(client, UUID)
-    # pw = DataPlot(thread)
-    pw = TrayItem({}, {})
-    pw.show()
-    loop.run_forever()
-    # sys.exit(app.exec())
+    win = pg.GraphicsLayoutWidget(show = True, title = "Config based plots")
+
+    sin_plot = win.addPlot(title="Sin Graph")
+    curve = sin_plot.plot(pen='y')
+    # curve = sin_plot.plot(pen=hex_to_rgb(source["pen_color"]))
+    sin_plot.setLabel('left', config.get("y_label", ""), units=config.get("y_units", ""))
+    sin_plot.setLabel('bottom', config.get("x_label", ""), units=config.get("x_units", ""))
+    sin_plot.enableAutoRange('y', False)
+    sin_plot.setRange(yRange=(config["y_min"], config["y_max"]))
+    data = Queue(maxsize=config.get("num_data_points", 100))
+    [data.put(0) for _ in range(config.get("num_data_points", 100))]
+    curve.setData(data.queue)
+    time_last = time.time()
+
+    def update_data(val):
+        global data
+        data.get()
+        data.put(val)
+
+    def update_plot():
+        global curve, data, time_last
+        curve.setData(data.queue)
+        print(1/(time.time() - time_last))
+        time_last = time.time()
+
+    def sin_func(a, b, c, d, data):
+        return (a*math.sin(b*data+c)+d)
+
+    sink = coro(update_data)
+    sink.__next__()
+    source = coro(functools.partial(sin_func, 1, 1, 0, 0), sink)
+    source.__next__()
+    get_time = coro(time.time, source)
+    get_time.__next__()
+
+    timer = QTimer()
+    timer.setInterval(int(1000/60))
+    timer.timeout.connect(functools.partial(get_time.send, None))
+    timer.timeout.connect(update_plot)
+    timer.start()
+    app.exec()
+
+    '''
+p5 = win.addPlot(title="Scatter plot, axis labels, log scale")
+x = np.random.normal(size=1000) * 1e-5
+y = x*1000 + 0.005 * np.random.normal(size=1000)
+y -= y.min()-1.0
+mask = x > 1e-15
+x = x[mask]
+y = y[mask]
+p5.plot(x, y, pen=None, symbol='t', symbolPen=None, symbolSize=10, symbolBrush=(100, 100, 255, 50))
+p5.setLabel('left', "Y Axis", units='A')
+p5.setLabel('bottom', "Y Axis", units='s')
+p5.setLogMode(x=True, y=False)
+
+p6 = win.addPlot(title="Updating plot")
+curve = p6.plot(pen='y')
+data = np.random.normal(size=(10,1000))
+ptr = 0
+def update():
+    global curve, data, ptr, p6
+    curve.setData(data[ptr%10])
+    if ptr == 0:
+        p6.enableAutoRange('xy', False)  ## stop auto-scaling after the first data set is plotted
+    ptr += 1
+timer = QtCore.QTimer()
+timer.timeout.connect(update)
+timer.start(50)
+    '''
+
+
 

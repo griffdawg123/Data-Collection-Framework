@@ -1,3 +1,4 @@
+import functools
 import time
 import math
 from queue import Queue
@@ -7,14 +8,10 @@ import random
 import os
 import sys
 
-# append path directory to system path so other modules can be accessed
-myDir = os.getcwd()
-sys.path.append(myDir)
-from pathlib import Path
-path = Path(myDir)
-a=str(path.parent.absolute())
-sys.path.append(a)
+from PyQt6.QtCore import QObject, pyqtSignal
+
 from src.ble.threads import DataThread
+
 
 def get_sin() -> Generator[float, None, None]:
     while True:
@@ -41,10 +38,68 @@ class RandomThread(DataThread):
     def get_value(self):
         self.value.emit(random.random())
 
+class ProducerCoro():
+
+    def __init__(self, func, next_coro):
+        super().__init__()
+        self.func = func
+        self.next_coro = next_coro
+        self.routine = self.coro()
+    
+    def coro(self):
+        print("Starting coro")
+        try:
+            while True:
+                inbound = yield
+                self.data.emit(self.func(inbound))
+        except GeneratorExit:
+            print("Closing coro")
+
+    def start(self):
+        self.routine.__next__()
+
+    def send(self, data):
+        self.routine.send(data)
+
+    def result_func(self, func):
+        self.data.connect(func)
+
+def sin_coro(a, b, c, d):
+    print("Starting Sin Coro")
+    try:
+        while True:
+            data = yield
+            print(f"{a}sin({b}x+{c})+{d} = {a*math.sin(b*data+c)+d}")
+    except GeneratorExit:
+        print("Closing Sin Coro")
+
+def coro(func, next_coro=None):
+    print("Starting coro")
+    try:
+        while True:
+            data = yield
+            if next_coro:
+                if data:
+                    next_coro.send(func(data))
+                else:
+                    next_coro.send(func())
+            else:
+                if data:
+                    func(data)
+                else:
+                    func()
+    except GeneratorExit:
+        print("Exiting Coro")
+
 if __name__ == "__main__":
-    q = Queue()
-    q.put(0)
-    print(q.queue)
-    q.put(next(get_sin()))
-    print(q.queue)
-    print(list(itertools.islice(q.queue, 1)))
+    def sin_func(a, b, c, d, data):
+        return (a*math.sin(b*data+c)+d)
+    
+    sink = coro(print)
+    sink.__next__()
+    source = coro(functools.partial(sin_func, 1, 1, 0, 0), sink)
+    source.__next__()
+
+    start_time = time.time()
+    while time.time() - start_time < 100:
+        source.send(time.time())
