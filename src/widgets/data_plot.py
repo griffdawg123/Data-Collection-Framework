@@ -12,7 +12,7 @@ import sys
 from qasync import QEventLoop
 import asyncio
 
-from src.ble.static_generators import coro
+from src.ble.static_generators import coro, get_coro
 from src.ble.threads import DataThread
 from src.ble.ble_generators import NotifyThread
 from src.helpers import hex_to_rgb
@@ -92,16 +92,18 @@ class Plots(pg.GraphicsLayoutWidget):
         super().__init__(show=True, title=config.get("title", ""))
         self.config = config
         self.clients = clients
+        self.data = []
         self.init_rows(config.get("rows", []))
-        self.data = [[[]]]
     
     def init_rows(self, plot_configs):
         for i, row in enumerate(plot_configs):
+            self.data.append([])
             self.init_plots(row, i)
             self.nextRow()
 
     def init_plots(self, row, i):
         for j, plot in enumerate(row):
+            self.data[i].append([])
             new_plot = self.addPlot(title=plot.get("title"))
             new_plot.setLabel('left', plot.get("y_label", ""), units=plot.get("y_units", ""))
             new_plot.setLabel('bottom', plot.get("x_label", ""), units=plot.get("x_units", ""))
@@ -113,8 +115,33 @@ class Plots(pg.GraphicsLayoutWidget):
 
     def init_sources(self, sources, datapoints, i, j):
         for k, source in enumerate(sources):
-            self.data[i][j][k] = Queue(maxsize=datapoints)
-            [self.data[i][j][k].put(0) for _ in range(datapoints)]
+            # need to create a coroutine for source (BLE Notify, BLE Read and Time)
+            # need to create a coroutine for function (Sin, Cos, Parsing, Identity, etc)
+            # need to create a couroutine for updating 
+            # ith row, jth plot, kth source
+            queue = Queue(maxsize=datapoints)
+            [ queue.put(0) for _ in range(datapoints) ]
+            sink = get_coro(functools.partial(self.update_data, i, j, k))
+            sink.__next__()
+            func = get_coro(source.get("func").get("name"), sink, source.get("func").get("params"))
+            func.__next__()
+            source = get_coro(source.get("type"), func)
+            source.__next__()
+            
+            source_info = {
+                "data" : queue,
+                "sink" : sink,
+                "func" : func,
+                "source" : source,
+            }
+            self.data[i][j].append(source_info)
+
+    def update_data(self, i, j, k, data):
+        # update then queue of this data
+        print("Updating with", data)
+        queue: Queue = self.data[i][j][k].get("data")
+        queue.get()
+        queue.put(data)
 
         
 if __name__ == "__main__":
@@ -126,7 +153,16 @@ if __name__ == "__main__":
             "sources" : [
                 {
 
-                    "type" : "static",
+                    "type" : "time",
+                    "func" : {
+                        "name" : "sin",
+                        "params" : {
+                            "a" : 1,
+                            "b" : 1,
+                            "c" : 0,
+                            "d" : 0,
+                        },
+                    },
                     "pen_colour" : "FFFF00",
                     "source_name" : "sin"
                 }

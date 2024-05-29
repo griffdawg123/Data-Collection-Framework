@@ -12,6 +12,39 @@ from PyQt6.QtCore import QObject, pyqtSignal
 
 from src.ble.threads import DataThread
 
+def coro(func, next_coro=None):
+    print("Starting coro")
+    try:
+        while True:
+            data = yield
+            if next_coro:
+                if data:
+                    next_coro.send(func(data))
+                else:
+                    next_coro.send(func())
+            else:
+                if data:
+                    func(data)
+                else:
+                    func()
+    except GeneratorExit:
+        print("Exiting Coro")
+
+def get_coro(type, next_coro=None, args = {}):
+    match type:
+        case "time":
+            return coro(time.time, next_coro)
+        case "sin":
+            return coro(functools.partial(param_sin, args), next_coro)
+        case _:
+            return coro(lambda x: x, next_coro)
+
+def param_sin(args, data):
+    a = args["a"]
+    b = args["b"]
+    c = args["c"]
+    d = args["d"]
+    return a*math.sin(b*data + c)+d
 
 def get_sin() -> Generator[float, None, None]:
     while True:
@@ -72,24 +105,6 @@ def sin_coro(a, b, c, d):
             print(f"{a}sin({b}x+{c})+{d} = {a*math.sin(b*data+c)+d}")
     except GeneratorExit:
         print("Closing Sin Coro")
-
-def coro(func, next_coro=None):
-    print("Starting coro")
-    try:
-        while True:
-            data = yield
-            if next_coro:
-                if data:
-                    next_coro.send(func(data))
-                else:
-                    next_coro.send(func())
-            else:
-                if data:
-                    func(data)
-                else:
-                    func()
-    except GeneratorExit:
-        print("Exiting Coro")
 
 if __name__ == "__main__":
     def sin_func(a, b, c, d, data):
