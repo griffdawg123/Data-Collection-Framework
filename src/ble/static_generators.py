@@ -19,11 +19,14 @@ def coro(func, next_coro=None):
             data = yield
             if next_coro:
                 if data:
+                    print("function")
                     next_coro.send(func(data))
                 else:
+                    print("Generating data")
                     next_coro.send(func())
             else:
                 if data:
+                    print("setting data")
                     func(data)
                 else:
                     func()
@@ -35,6 +38,7 @@ def get_coro(type, next_coro=None, args = {}):
         case "time":
             return coro(time.time, next_coro)
         case "sin":
+            print("returning sin coro")
             return coro(functools.partial(param_sin, args), next_coro)
         case _:
             return coro(lambda x: x, next_coro)
