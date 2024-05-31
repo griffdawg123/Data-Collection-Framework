@@ -6,3 +6,8 @@ logs/*
 !logs
 **/__pycache__/
 .vscode/
+.prettierignore
+.prettierrc
+node_modules
+package.json
+package-lock.json
