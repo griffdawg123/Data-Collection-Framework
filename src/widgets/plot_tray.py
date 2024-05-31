@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QScrollArea, QWidget, QVBoxLayout
 from PyQt6.QtCore import Qt
 
 from src.widgets.control_buttons import ControlButtons
-from src.widgets.data_plot import DataPlot, TrayItem
+# from src.widgets.data_plot import DataPlot, TrayItem
 
 class PlotTray(QWidget):
     def __init__(self, clients: Dict = {}) -> None:

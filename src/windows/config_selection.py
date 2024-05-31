@@ -60,6 +60,6 @@ class ConfigSelection(QWidget):
         self.logger.info("Workspace Config Loaded")
         config_name, _ = QFileDialog.getOpenFileName(self,self.tr("Open Config"), "./config/workspaces/", self.tr("Config Files (*.config)"))
         if config_name:
-            self.config_url = f"config/workspaces/{config_name.split("/")[-1]}"
+            self.config_url = f"config/workspaces/{config_name.split('/')[-1]}"
             self.set_config_func(self.config_url)
             self.close()

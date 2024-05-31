@@ -2,7 +2,6 @@ import logging
 from typing import Dict
 from PyQt6.QtWidgets import (
     QWidget,
-    QVBoxLayout,
     QHBoxLayout,
     QFileDialog
 )
@@ -14,11 +13,10 @@ from bleak import BleakClient
 from qasync import asyncClose
 from src import helpers
 from src.loaders.config_loader import ConfigLoader
-from src.widgets.plot_tray import PlotTray
+from src.widgets.data_plot import Plots
 from src.widgets.sidebar import Sidebar
 from src.windows.config_selection import ConfigSelection
 from src.windows.new_device import NewDevice
-from src.widgets.graph_widget import PlotWidget
 from src.logs.logs_setup import LoggerEnv
 
 
@@ -32,7 +30,7 @@ class Workspace(QWidget):
         self.clients: Dict[str, BleakClient] = {}
 
         # logger stup
-        self.logger = logging.getLogger(log_level)
+        self.logger = logging.getLogger(log_level.value)
         self.logger.info("Logger Enabled")
 
         # setup config
@@ -42,7 +40,8 @@ class Workspace(QWidget):
 
         # setup inner widgets
         self.sidebar = Sidebar()
-        self.plots = PlotTray()
+        # self.plots = PlotTray()
+        # self.plot_config = self.config.get("plots")
 
         self.config_window: ConfigSelection = ConfigSelection(
             self.logger,
@@ -67,26 +66,18 @@ class Workspace(QWidget):
         ]
 
         # Sidebar initialisation
-        # TODO: Update restart function
         self.sidebar.set_params(
             self.config_manager.get_title(),
             self.remove_device,
             self.new_device,
             self.load_device,
-            print,
+            self.restart,
             self.clients
         )
         
         # Plot initialization
-        self.plots = PlotTray(self.clients)
-        self.plots.set_plots(self.config["plots"])
-        # self.plots = QWidget()
-        # self.plots_layout = QVBoxLayout()
-        # self.graph = PlotWidget(self.clients)
-        # self.graph.set_plot_params(y_max=360, y_min=0)
-        # self.plots_layout.addWidget(self.graph)
-        # self.plots.setLayout(self.plots_layout)
-        # self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
+        self.plot_config = self.config.get("plots", {})
+        self.plots = Plots(self.plot_config, self.clients)
 
         # Layout setup
         self.workspace_layout: QHBoxLayout = QHBoxLayout()
@@ -162,6 +153,9 @@ class Workspace(QWidget):
         del self.clients[device_name]
         self.remove_device_from_conf(device_name)
         self.logger.info(f"Removing device {device_name}")
+
+    def restart(self):
+        self.plots.restart()
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")

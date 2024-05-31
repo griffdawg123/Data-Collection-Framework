@@ -25,7 +25,7 @@ class Plots(pg.GraphicsLayoutWidget):
         self.data = []
         self.init_rows(config.get("rows", []))
         self.timer = QTimer()
-        self.timer.setInterval(int(1000/config.get("data_rate")))
+        self.timer.setInterval(int(1000/config.get("data_rate", 60)))
         self.init_timers()
         self.timer.start()
     
@@ -76,7 +76,6 @@ class Plots(pg.GraphicsLayoutWidget):
 
     def update_data(self, i, j, k, data):
         # update then queue of this data
-        print("Updating with", data)
         queue: Queue = self.data[i][j][k].get("data")
         queue.get()
         queue.put(data)
@@ -92,7 +91,6 @@ class Plots(pg.GraphicsLayoutWidget):
         source.send(data)
 
     def init_timers(self):
-        print(self.data)
         for row in self.data:
             for plot in row:
                 for source in plot:
@@ -101,13 +99,23 @@ class Plots(pg.GraphicsLayoutWidget):
                     print("Sending to source", source)
         self.timer.timeout.connect(self.update_plots)
 
+
+    def restart(self):
+        for row in self.data:
+            for plot in row:
+                for source in plot:
+                    datapoints = len(source["data"].queue)
+                    queue = Queue(maxsize=datapoints)
+                    [ queue.put(0) for _ in range(datapoints) ]
+                    source["data"] = queue
+
         
 if __name__ == "__main__":
     config = {
-    "title" : "Sin Plot",
     "rows" : [
       [
         {
+            "title" : "Sin Plot",
             "sources" : [
                 {
 
