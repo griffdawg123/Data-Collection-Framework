@@ -1,0 +1,23 @@
+{
+  "rows": [
+    [
+      {
+        "sources": [
+          {
+            "type": "static",
+            "pen_colour": "FFFF00",
+            "source_name": "sin"
+          }
+        ],
+        "num_data_points": 100,
+        "y_max": 1,
+        "y_min": -1,
+        "x_label": "Time",
+        "x_units": "s",
+        "y_label": "Value",
+        "y_units": ""
+      }
+    ]
+  ],
+  "data_rate": 60
+}

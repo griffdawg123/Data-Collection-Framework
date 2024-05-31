@@ -21,7 +21,7 @@ class Sidebar(QWidget):
         self.header_text: QLabel = QLabel()
         self.status_tray: StatusTray = StatusTray(remove_func)
         self.device_buttons: DeviceButtons = DeviceButtons(new_device, load_device, restart)
-        self.control_buttons = ControlButtons()
+        # self.control_buttons = ControlButtons()
         self.set_params(title, remove_func, new_device, load_device, restart, {})
         self.init_UI()
 
@@ -45,7 +45,7 @@ class Sidebar(QWidget):
     def init_UI(self):
         layout = QVBoxLayout()
         layout.addWidget(self.header_text)
-        layout.addWidget(self.control_buttons)
+        # layout.addWidget(self.control_buttons)
         layout.addWidget(self.status_tray)
         layout.addWidget(self.device_buttons)
         self.setLayout(layout)

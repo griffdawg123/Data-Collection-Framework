@@ -1,9 +1,9 @@
 import logging
 import logging.config
 import yaml
-from enum import StrEnum
+from enum import Enum
 
-class LoggerEnv(StrEnum):
+class LoggerEnv(Enum):
     DEV = "dev"
     PROD ="prod"
     STAG = "staging"

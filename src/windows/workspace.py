@@ -2,7 +2,6 @@ import logging
 from typing import Dict
 from PyQt6.QtWidgets import (
     QWidget,
-    QVBoxLayout,
     QHBoxLayout,
     QFileDialog
 )
@@ -10,14 +9,14 @@ import json
 import asyncio
 
 from bleak import BleakClient
+
 from qasync import asyncClose
 from src import helpers
 from src.loaders.config_loader import ConfigLoader
+from src.widgets.data_plot import Plots
 from src.widgets.sidebar import Sidebar
-from src.widgets.status_tray import StatusTray
 from src.windows.config_selection import ConfigSelection
 from src.windows.new_device import NewDevice
-from src.widgets.graph_widget import PlotWidget
 from src.logs.logs_setup import LoggerEnv
 
 
@@ -31,7 +30,7 @@ class Workspace(QWidget):
         self.clients: Dict[str, BleakClient] = {}
 
         # logger stup
-        self.logger = logging.getLogger(log_level)
+        self.logger = logging.getLogger(log_level.value)
         self.logger.info("Logger Enabled")
 
         # setup config
@@ -39,10 +38,11 @@ class Workspace(QWidget):
         self.config_manager = ConfigLoader(default_config, self.logger)
         self.config = self.config_manager.load_config()
 
+        # setup inner widgets
         self.sidebar = Sidebar()
-        self.status_tray = StatusTray(self.remove_device)
-        self.header = QWidget()
-        self.setup_column = QWidget()
+        # self.plots = PlotTray()
+        # self.plot_config = self.config.get("plots")
+
         self.config_window: ConfigSelection = ConfigSelection(
             self.logger,
             self.create_config_manager
@@ -64,54 +64,29 @@ class Workspace(QWidget):
             helpers.format_config_name(device_name)
             for device_name in self.clients.keys()
         ]
-        # TODO: Update restart function
-        self.sidebar.set_params(self.config_manager.get_title(), self.remove_device, self.new_device, self.load_device, print, self.clients)
-        # self.status_tray = StatusTray(self.remove_device, self.clients)
-        # self.new_device_button = QPushButton("New Device")
-        # self.new_device_button.clicked.connect(self.new_device)
-        # self.load_device_button = QPushButton("Load Device")
-        # self.load_device_button.clicked.connect(self.load_device)
-        # self.restart_button = QPushButton()
-        # self.restart_button.setText("Restart")
-        # self.setup_column = SetupColumn(
-        #     self.status_tray,
-        #     self.new_device_button,
-        #     self.load_device_button,
-        #     self.restart_button
-        # )
 
-        self.plots = QWidget()
-        self.plots_layout = QVBoxLayout()
-        self.graph = PlotWidget(self.clients)
-        self.graph.set_plot_params(y_max=360, y_min=0)
-        self.plots_layout.addWidget(self.graph)
-        self.plots.setLayout(self.plots_layout)
-        self.plots.setStyleSheet("border: 1px solid black; font-size: 40px;")
+        # Sidebar initialisation
+        self.sidebar.set_params(
+            self.config_manager.get_title(),
+            self.remove_device,
+            self.new_device,
+            self.load_device,
+            self.restart,
+            self.clients
+        )
+        
+        # Plot initialization
+        self.plot_config = self.config.get("plots", {})
+        self.plots = Plots(self.plot_config, self.clients)
 
-        # self.header = Header(self.config_manager.get_title())
-        # self.header.setup_buttons(
-        #     self.graph.set_plot_thread,
-        #     self.graph.start,
-        #     self.graph.stop
-        # )
-
-        # self.title_layout: QVBoxLayout = QVBoxLayout()
-        # self.title_layout.addWidget(self.header)
-
+        # Layout setup
         self.workspace_layout: QHBoxLayout = QHBoxLayout()
-        # self.workspace_layout.addWidget(self.setup_column)
         self.workspace_layout.addWidget(self.sidebar)
         self.workspace_layout.addWidget(self.plots)
         self.workspace_layout.setStretch(0, 1)
         self.workspace_layout.setStretch(1, 9)
         self.workspace = QWidget()
         self.workspace.setLayout(self.workspace_layout)
-
-#         self.title_layout.addWidget(self.workspace)
-#         self.title_layout.setStretch(0, 1)
-#         self.title_layout.setStretch(1, 9)
-
-        # self.setLayout(self.title_layout)
         self.setLayout(self.workspace_layout)
         self.logger.info("UI Loaded")
 
@@ -178,6 +153,9 @@ class Workspace(QWidget):
         del self.clients[device_name]
         self.remove_device_from_conf(device_name)
         self.logger.info(f"Removing device {device_name}")
+
+    def restart(self):
+        self.plots.restart()
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")

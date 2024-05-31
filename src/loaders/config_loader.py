@@ -79,7 +79,7 @@ class ConfigLoader():
                 device_conf = json.loads(infile.read())
                 device_dict[device_conf["name"]] = BleakClient(device_conf["address"])
         self.config["devices"] = devices
-        self.logger.info(f"Loaded devices {", ".join(devices)}")
+        self.logger.info(f"Loaded devices {', '.join(devices)}")
         return device_dict
 
     # save a device file when it is added to a workspace
@@ -92,7 +92,7 @@ class ConfigLoader():
         file_name = format_config_name(device_dict["name"])
         with open(f"config/devices/{file_name}.config", "w", encoding='utf-8') as outfile:
             outfile.write(json.dumps(device_dict))
-        self.logger.info(f"Saved device {device_dict["name"]} with address {device_dict["address"]} to {file_name}.config")
+        self.logger.info(f"Saved device {device_dict['name']} with address {device_dict['address']} to {file_name}.config")
 
     def load_device_config(self, device_name: str) -> Dict:
         file_name = format_config_name(device_name)
