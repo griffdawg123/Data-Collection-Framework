@@ -1,0 +1,8 @@
+venv/*
+config/*/*
+!config/
+!config/*/
+logs/*
+!logs
+**/__pycache__/
+.vscode/
