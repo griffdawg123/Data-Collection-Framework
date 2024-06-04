@@ -3,7 +3,6 @@
 - [ ] Graph wrapper with title, axis labels, remove, edit buttons
 - [ ] add New plot button to control buttons
 ## Backlog
-- [ ] Individual plot widget - Implement with coroutine method & new bit parsing
 - [ ] Reimplement restart function
 - [ ] Rewrite Data Collection using coroutines
 - [ ] Allow for in application rewriting of plot config 
@@ -16,3 +15,5 @@
 ## Continuous Integration
 - [ ] Testing
 - [ ] Logging
+## "Done"
+- [x] Individual plot widget - Implement with coroutine method & new bit parsing

@@ -19,6 +19,9 @@ def coro(func, next_coro=None):
     except GeneratorExit:
         print("Exiting Coro")
 
+# For a non BLE source, time.time is called upon timeout
+# Perhaps for BLE, notify callback sends a value to the coroutine, graph is only
+# updated upon timeout
 def get_coro(type, next_coro=None, args = {}):
     match type:
         case "time":
