@@ -20,3 +20,5 @@
 ## Continuous Integration
 - [ ] Testing
 - [ ] Logging
+## "Done"
+- [x] Individual plot widget - Implement with coroutine method & new bit parsing
