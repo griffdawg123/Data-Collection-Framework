@@ -4,6 +4,9 @@ from PyQt6.QtWidgets import QApplication
 from queue import Queue
 import pyqtgraph as pg
 import sys
+import asyncio
+from qasync import QEventLoop
+from bleak import BleakClient
 
 from src.ble.static_generators import coro, get_coro
 from src.helpers import hex_to_rgb
@@ -49,9 +52,11 @@ class Plots(pg.GraphicsLayoutWidget):
             sink = coro(functools.partial(self.update_data, i, j, k))
             sink.__next__()
             func = get_coro(source.get("func").get("type"), sink, source.get("func").get("params"))
+            assert(func)
             func.__next__()
-            data_source = get_coro(source.get("type"), func)
-            data_source.__next__()
+            data_source = get_coro(source.get("type"), func, args = source.get("args", {}), clients=self.clients)
+            if data_source != None:
+                data_source.__next__()
 
             curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
             curve.setData(queue.queue)
@@ -79,7 +84,8 @@ class Plots(pg.GraphicsLayoutWidget):
                     source["curve"].setData(source["data"].queue)
 
     def on_timeout(self, source, data):
-        source.send(data)
+        if source: source.send(data)
+        
 
     def init_timers(self):
         for row in self.data:
@@ -105,40 +111,85 @@ class Plots(pg.GraphicsLayoutWidget):
 
         
 if __name__ == "__main__":
+    # config = {
+    # "rows" : [
+    #   [
+    #     {
+    #         "title" : "Sin Plot",
+    #         "sources" : [
+    #             {
+
+    #                 "type" : "time",
+    #                 "func" : {
+    #                     "name" : "sin",
+    #                     "params" : {
+    #                         "a" : 1,
+    #                         "b" : 1,
+    #                         "c" : 0,
+    #                         "d" : 0,
+    #                     },
+    #                 },
+    #                 "pen_colour" : "FFFF00",
+    #                 "source_name" : "sin"
+    #             }
+    #         ],
+    #         "num_data_points" : 100,
+    #         "y_max" : 1,
+    #         "y_min" : -1,
+    #         "x_label" : "Time",
+    #         "x_units" : "s",
+    #         "y_label" : "Value",
+    #         "y_units" : ""
+    #     }
+    #   ]
+    # ],
+    # "data_rate" : 60
+# }
+
+
     config = {
     "rows" : [
       [
         {
-            "title" : "Sin Plot",
+            "title" : "BLE Plot",
             "sources" : [
                 {
-
-                    "type" : "time",
+                    "type" : "ble",
                     "func" : {
                         "type" : "sin",
                         "params" : {
-                            "a" : 1,
-                            "b" : 1,
-                            "c" : 0,
-                            "d" : 0,
+                            "chunks" : [
+                                {"length":32,"signed":False,"remainder":16}    
+                            ]
                         },
                     },
-                    "pen_color" : "FFFF00",
-                    "source_name" : "sin"
+                    "pen_colour" : "FFFF00",
+                    "source_name" : "Heading",
+                    "args" : {
+                        "UUID":  "EF680409-9B35-4933-9B10-52FFA9740042",
+                        "name": "Thingy",
+                    },
                 }
             ],
             "num_data_points" : 100,
-            "y_max" : 1,
-            "y_min" : -1,
+            "y_max" : 360,
+            "y_min" : 0,
             "x_label" : "Time",
             "x_units" : "s",
-            "y_label" : "Value",
-            "y_units" : ""
+            "y_label" : "Heading",
+            "y_units" : "Degrees"
         }
       ]
     ],
     "data_rate" : 60
 }
+
     app = QApplication(sys.argv)
-    plots = Plots(config, {})
-    app.exec()
+    event_loop = QEventLoop(app)
+    asyncio.set_event_loop(event_loop)
+    client = BleakClient("F1:EC:95:17:0A:62")
+    connect_task = event_loop.create_task(client.connect())        
+    close_event = asyncio.Event()
+    app.aboutToQuit.connect(close_event.set)
+    plots = Plots(config, {"Thingy": client})
+    event_loop.run_until_complete(close_event.wait())
