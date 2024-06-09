@@ -6,6 +6,8 @@ import math
 from bleak import BleakClient
 from typing import Dict
 
+from src.helpers import parse_bytearray
+
 def coro(func, next_coro=None):
     try:
         while True:
@@ -38,12 +40,25 @@ def get_coro(type, next_coro=None, args = {}, clients: Dict[str, BleakClient] = 
         case "ble":
             # Args contains the name of the ble device
             loop = asyncio.get_event_loop()
+            print(clients)
             client: BleakClient = clients[args.get("name")]
             print(client)
-            notify_task = loop.create_task(client.start_notify(args.get("UUID"), functools.partial(ble_unpack, next_coro)))
-            notify_task.add_done_callback(lambda _: new_coro.__next__)
-    print("returning blank coro")
-    return new_coro
+            
+            if not client.is_connected:
+                print("not connected")
+                _ = loop.create_task(client.connect())
+
+            
+            notify_task = loop.create_task(
+                    client.start_notify(args.get("UUID"), 
+                    functools.partial(ble_unpack, next_coro))
+            )
+            notify_task.add_done_callback(lambda _: print("Notify Started"))
+        case "fixed_point":
+            return coro(functools.partial(parse_bytearray), next_coro)
+        case _:
+            print("returning blank coro")
+            return new_coro
 
 def param_cos(args, data):
     a = args["a"]
@@ -64,24 +79,39 @@ def ble_unpack(next_coro, _, data):
     next_coro.send(data)
 
 async def main():
+    '''
+
+    Replace source coroutine with a notify that sends to the next coroutine
+    
+
+    '''
     async with BleakClient("F1:EC:95:17:0A:62") as client:
-        await client.start_notify("EF680409-9B35-4933-9B10-52FFA9740042", print)
+        # await client.start_notify("EF680409-9B35-4933-9B10-52FFA9740042", print)
 
-        # value = 0
-        # def set_value(x):
-        #     print("Setting data")
-        #     global value
-        #     value = x
+        def set_value(x):
+            print("Setting data")
+            print(x)
 
-        # sink = coro(set_value)
-        # sink.__next__()
-        # source = get_coro("ble", next_coro=sink, args={"name" : "thingy", "UUID" : "EF680409-9B35-4933-9B10-52FFA9740042"}, clients={"thingy": client})
+        sink = coro(set_value)
+        sink.__next__()
+        await client.start_notify("EF680409-9B35-4933-9B10-52FFA9740042", functools.partial(ble_unpack, sink))
+        # loop = asyncio.get_event_loop()
+        # notify_task = loop.create_task(
+        #         client.start_notify(
+        #             "EF680409-9B35-4933-9B10-52FFA9740042",
+        #             print))
+        # notify_task.add_done_callback(lambda _: print("Notify finished"))
+        # args = {
+        #         "name" : "thingy",
+        #         "UUID" : "EF680409-9B35-4933-9B10-52FFA9740042"
+        #         }
+        # source = get_coro("ble", next_coro=sink, args=args, clients={"thingy": client})
         # source.__next__()
         time_now = time.time()
         while time.time() - time_now < 10:
-            # print(value)
             continue
 
-        await client.stop_notify("EF6804049-9B35-4933-9B10-52FFA9740042")
+        # await client.stop_notify("EF6804049-9B35-4933-9B10-52FFA9740042")
 if __name__ == "__main__":
+    # 
     asyncio.run(main())
