@@ -28,7 +28,7 @@
 #         }
 
 from abc import abstractmethod
-import functools
+import sys
 from typing import Dict
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
@@ -62,8 +62,11 @@ class ConfigForm(QWidget):
         self.sources.currentTextChanged.connect(self.change_source)
         self.source_stack = QStackedWidget()
         self.data_points = QSpinBox()
+        self.data_points.setRange(0, 250)
         self.y_max = QDoubleSpinBox()
+        self.y_max.setRange(float('-inf'), float('inf'))
         self.y_min = QDoubleSpinBox()
+        self.y_min.setRange(float('-inf'), float('inf'))
         self.x_label = QLineEdit()
         self.x_units = QLineEdit()
         self.y_label = QLineEdit()
@@ -91,7 +94,6 @@ class ConfigForm(QWidget):
         layout.addWidget(self.get_config_button)
 
         self.setLayout(layout)
-        self.show()
 
     def get_config(self):
         return {
@@ -235,9 +237,13 @@ class TrigForm(ParamForm):
     def __init__(self) -> None:
         super().__init__()
         self.a = QDoubleSpinBox()
+        self.a.setRange(sys.float_info.min, sys.float_info.max)
         self.b = QDoubleSpinBox()
+        self.b.setRange(sys.float_info.min, sys.float_info.max)
         self.c = QDoubleSpinBox()
+        self.c.setRange(sys.float_info.min, sys.float_info.max)
         self.d = QDoubleSpinBox()
+        self.d.setRange(sys.float_info.min, sys.float_info.max)
         self.init_UI()
 
     def init_UI(self):
@@ -299,7 +305,10 @@ class QFixedPointChunk(ParamForm):
     def __init__(self) -> None:
         super().__init__()
         self.length = QSpinBox()
+        self.length.setRange(0, 512*8)
+        self.length.setSingleStep(2)
         self.remainder = QSpinBox()
+        self.remainder.setRange(0, 512*8)
         self.signed = QCheckBox()
         self.init_UI()
 
