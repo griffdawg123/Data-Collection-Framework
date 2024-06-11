@@ -1,6 +1,6 @@
 import sys
-from typing import List
-from PyQt6.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QTabWidget, QVBoxLayout, QWidget, QDialogButtonBox
+from typing import Dict, List
+from PyQt6.QtWidgets import QApplication, QDialog, QLabel, QPushButton, QSpinBox, QTabWidget, QVBoxLayout, QWidget, QDialogButtonBox
 from functools import partial
 
 from src.widgets.graph_form import ConfigForm
@@ -11,6 +11,8 @@ MAX_GRAPHS = 3
 class GraphConfig(QDialog):
     def __init__(self) -> None:
         super().__init__()
+        self.data_rate = QSpinBox()
+        self.data_rate.setRange(1, 100)
         self.row_tabs: QTabWidget = QTabWidget()
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.button_box.accepted.connect(self.accept)
@@ -29,14 +31,16 @@ class GraphConfig(QDialog):
         self.remove_row_button.clicked.connect(self.remove_row)
 
         layout = QVBoxLayout()
+        layout.addWidget(self.data_rate)
         layout.addWidget(self.row_tabs)
         layout.addWidget(self.remove_row_button)
         layout.addWidget(self.button_box)
         self.setLayout(layout)
-        self.show()
 
     def get_config(self):
-        self.exec()
+        if not self.exec():
+            return None
+        config: Dict = {"data_rate" : self.data_rate.value()}
         rows = []
         print(self.graphs)
         for row in self.graphs:
@@ -46,8 +50,8 @@ class GraphConfig(QDialog):
                 # if graph is not None:
                 graphs.append(graph.get_config())
             rows.append(graphs)
-
-        return rows
+        config["rows"] = rows
+        return config
 
     # ---- Rows ---- 
 

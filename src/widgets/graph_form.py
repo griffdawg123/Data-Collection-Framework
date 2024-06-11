@@ -1,32 +1,3 @@
-
-#         {
-#             "title" : "Sin Plot",
-#             "sources" : [
-#                 {
-
-#                     "type" : "time",
-#                     "func" : {
-#                         "name" : "sin",
-#                         "params" : {
-#                             "a" : 1,
-#                             "b" : 1,
-#                             "c" : 0,
-#                             "d" : 0,
-#                         },
-#                     },
-#                     "pen_colour" : "FFFF00",
-#                     "source_name" : "sin"
-#                 }
-#             ],
-#             "num_data_points" : 100,
-#             "y_max" : 1,
-#             "y_min" : -1,
-#             "x_label" : "Time",
-#             "x_units" : "s",
-#             "y_label" : "Value",
-#             "y_units" : ""
-#         }
-
 from abc import abstractmethod
 import sys
 from typing import Dict
@@ -87,12 +58,6 @@ class ConfigForm(QWidget):
         layout.addRow(self.new_source_button, self.new_source_name)
         layout.addRow(self.remove_source_button, self.sources)
         layout.addWidget(self.source_stack)
-
-
-        self.get_config_button = QPushButton("Get Config")
-        self.get_config_button.clicked.connect(lambda _: print(self.get_config()))
-        layout.addWidget(self.get_config_button)
-
         self.setLayout(layout)
 
     def get_config(self):
@@ -327,12 +292,3 @@ class QFixedPointChunk(ParamForm):
             "signed" : self.signed.isChecked(),
                 }
 
-
-if __name__ == "__main__":
-    import sys
-
-    app = QApplication(sys.argv)
-    ff = ConfigForm()
-    sys.exit(app.exec())
-    
-        

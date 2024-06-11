@@ -24,6 +24,7 @@ def get_coro(type, next_coro=None, args = {}):
         case "time":
             return coro(time.time, next_coro)
         case "sin":
+            print("sin")
             return coro(functools.partial(param_sin, args), next_coro)
         case "cos":
             return coro(functools.partial(param_cos, args), next_coro)
@@ -42,5 +43,6 @@ def param_sin(args, data):
     b = args["b"]
     c = args["c"]
     d = args["d"]
+    print(args)
     return a*math.sin(b*data + c)+d
 

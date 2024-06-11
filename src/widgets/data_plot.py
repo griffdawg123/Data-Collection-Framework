@@ -1,20 +1,11 @@
 import functools
-import math
-import time
-from typing import Dict, Optional
-from PyQt6.QtCore import QTimer, pyqtSignal, pyqtSlot, QThread
-from PyQt6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
-from bleak import BleakClient
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication
 from queue import Queue
 import pyqtgraph as pg
-import os
 import sys
-from qasync import QEventLoop
-import asyncio
 
 from src.ble.static_generators import coro, get_coro
-from src.ble.threads import DataThread
-from src.ble.ble_generators import NotifyThread
 from src.helpers import hex_to_rgb
 
 class Plots(pg.GraphicsLayoutWidget):
@@ -57,12 +48,12 @@ class Plots(pg.GraphicsLayoutWidget):
             [ queue.put(0) for _ in range(datapoints) ]
             sink = coro(functools.partial(self.update_data, i, j, k))
             sink.__next__()
-            func = get_coro(source.get("func").get("name"), sink, source.get("func").get("params"))
+            func = get_coro(source.get("func").get("type"), sink, source.get("func").get("params"))
             func.__next__()
             data_source = get_coro(source.get("type"), func)
             data_source.__next__()
 
-            curve = plot.plot(pen=hex_to_rgb(source.get("pen_colour", "FFFFFF")))
+            curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
             curve.setData(queue.queue)
             
             source_info = {
@@ -109,6 +100,9 @@ class Plots(pg.GraphicsLayoutWidget):
                     [ queue.put(0) for _ in range(datapoints) ]
                     source["data"] = queue
 
+    def stop(self):
+        self.timer.stop()
+
         
 if __name__ == "__main__":
     config = {
@@ -121,7 +115,7 @@ if __name__ == "__main__":
 
                     "type" : "time",
                     "func" : {
-                        "name" : "sin",
+                        "type" : "sin",
                         "params" : {
                             "a" : 1,
                             "b" : 1,
@@ -129,7 +123,7 @@ if __name__ == "__main__":
                             "d" : 0,
                         },
                     },
-                    "pen_colour" : "FFFF00",
+                    "pen_color" : "FFFF00",
                     "source_name" : "sin"
                 }
             ],
