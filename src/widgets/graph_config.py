@@ -9,10 +9,11 @@ MAX_ROWS = 3
 MAX_GRAPHS = 3
 
 class GraphConfig(QDialog):
-    def __init__(self) -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
         self.data_rate = QSpinBox()
         self.data_rate.setRange(1, 100)
+        self.data_rate.setValue(config.get("data_rate", 60))
         self.row_tabs: QTabWidget = QTabWidget()
         self.button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         self.button_box.accepted.connect(self.accept)
@@ -23,6 +24,8 @@ class GraphConfig(QDialog):
         self.graphs = []
         self.at_max_rows = False
         self.init_UI()
+        for row in config.get("rows", []):
+            self.add_row(row)
 
     def init_UI(self):
         self.row_tabs.setTabPosition(QTabWidget.TabPosition.West)
@@ -66,7 +69,7 @@ class GraphConfig(QDialog):
                     self.row_tabs.setTabVisible(row_count, False)
                     self.at_max_rows = True
 
-    def add_row(self):
+    def add_row(self, graphs = []):
         new_tabs: QTabWidget = QTabWidget()
         new_tabs.setTabPosition(QTabWidget.TabPosition.North)
         new_tabs.addTab(QLabel("Press '+' to add a graph"), "+")
@@ -74,6 +77,9 @@ class GraphConfig(QDialog):
         self.graph_tabs.append(new_tabs)
         self.graphs.append([])
         self.row_tabs.insertTab(self.row_tabs.count()-1, new_tabs, str(self.row_tabs.count()))
+        for graph in graphs:
+            self.add_graph(new_tabs, len(self.graphs)-1, graph)
+
 
     def remove_row(self):
         # If we are at max --> Remove row and append + to the end
@@ -109,10 +115,10 @@ class GraphConfig(QDialog):
                 if (graph_count == MAX_GRAPHS):
                     row_tabs_widget.setTabVisible(graph_count, False)
 
-    def add_graph(self, row_tabs_widget: QTabWidget, row_idx):
+    def add_graph(self, row_tabs_widget: QTabWidget, row_idx, graph_config = {}):
         new_graph = QWidget()
         new_graph_layout = QVBoxLayout()
-        new_graph_form = ConfigForm()
+        new_graph_form = ConfigForm(graph_config)
         new_graph_button = QPushButton("Remove Graph")
         new_graph_layout.addWidget(new_graph_form)
         new_graph_layout.addWidget(new_graph_button)

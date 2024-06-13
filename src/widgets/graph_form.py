@@ -1,10 +1,9 @@
 from abc import abstractmethod
+import functools
 import sys
 from typing import Dict
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
-        QApplication,
-        QCheckBox,
         QColorDialog,
         QComboBox,
         QDoubleSpinBox,
@@ -20,30 +19,53 @@ from PyQt6.QtWidgets import (
         )
 
 class ConfigForm(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
         self.title = QLineEdit()
+        self.title.setText(config.get("title", ""))
+
+        self.new_source_name = QLineEdit()
+        self.new_source_name.textChanged.connect(
+                lambda s: self.new_source_button.setDisabled(
+                    len(s) == 0
+                )
+            )
+
         self.new_source_button = QPushButton("Add Source")
-        self.new_source_button.clicked.connect(self.add_source)
-        self.new_source_name = QLineEdit("My Source")
+        self.new_source_button.clicked.connect(
+                functools.partial(self.add_source, {"source_name": self.new_source_name.text})
+        )
         self.remove_source_button = QPushButton("Remove Source")
         self.remove_source_button.clicked.connect(self.remove_source)
         self.source_map = {}
         self.sources = QComboBox()
         self.sources.currentTextChanged.connect(self.change_source)
         self.source_stack = QStackedWidget()
+
         self.data_points = QSpinBox()
-        self.data_points.setRange(0, 250)
+        self.data_points.setRange(1, 250)
+        self.data_points.setValue(config.get("num_data_points", 1))
+
         self.y_max = QDoubleSpinBox()
         self.y_max.setRange(float('-inf'), float('inf'))
+        self.y_max.setValue(config.get("y_max", 0))
         self.y_min = QDoubleSpinBox()
         self.y_min.setRange(float('-inf'), float('inf'))
+        self.y_min.setValue(config.get("y_min", 0))
+        self.y_min = QDoubleSpinBox()
+
         self.x_label = QLineEdit()
+        self.x_label.setText(config.get("x_label",""))
         self.x_units = QLineEdit()
+        self.x_units.setText(config.get("x_units",""))
         self.y_label = QLineEdit()
+        self.y_label.setText(config.get("y_label",""))
         self.y_units = QLineEdit()
+        self.y_units.setText(config.get("y_units",""))
         
         self.init_UI()
+        for source in config.get("sources", []):
+            self.add_source(source)
 
     def init_UI(self):
         layout = QFormLayout()
@@ -73,11 +95,11 @@ class ConfigForm(QWidget):
                 "sources" : [ s.get_config() for s in self.source_map.values() ]
         }
 
-    def add_source(self):
-        text = self.new_source_name.text()
+    def add_source(self, source = {}):
+        text = source.get("source_name", "")
         if text == "" or text in self.source_map.keys():
             return
-        source_form = SourceForm(text)
+        source_form = SourceForm(source)
         self.source_map[self.new_source_name.text()] = source_form
         self.sources.addItem(text)
         self.sources.setCurrentText(text)
@@ -97,9 +119,9 @@ class ConfigForm(QWidget):
 
 
 class SourceForm(QWidget):
-    def __init__(self, name = "") -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
-        self.name = QLineEdit(name)
+        self.name = QLineEdit(config.get("source_name", ""))
         self.available_sources = {
             "BLE Device" : "ble",
             "Internal Clock" : "time",
