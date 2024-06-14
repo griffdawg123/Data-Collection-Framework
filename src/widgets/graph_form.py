@@ -1,9 +1,11 @@
 from abc import abstractmethod
+from enum import Enum, IntEnum
 import functools
 import sys
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
+        QCheckBox,
         QColorDialog,
         QComboBox,
         QDoubleSpinBox,
@@ -24,22 +26,28 @@ class ConfigForm(QWidget):
         self.title = QLineEdit()
         self.title.setText(config.get("title", ""))
 
-        self.new_source_name = QLineEdit()
-        self.new_source_name.textChanged.connect(
+        self.new_source_name_edit = QLineEdit()
+        self.new_source_name_edit.textChanged.connect(
                 lambda s: self.new_source_button.setDisabled(
                     len(s) == 0
                 )
             )
+        self.new_source_name = ""
+        def set_source_name(s):
+            self.new_source_name = s
+            print(self.new_source_name)
+        self.new_source_name_edit.textChanged.connect(set_source_name)        
 
+
+        def new_source_clicked():
+            self.add_source({"source_name": self.new_source_name})
         self.new_source_button = QPushButton("Add Source")
-        self.new_source_button.clicked.connect(
-                functools.partial(self.add_source, {"source_name": self.new_source_name.text})
-        )
+        self.new_source_button.clicked.connect(new_source_clicked)
+        self.new_source_button.setDisabled(True)
         self.remove_source_button = QPushButton("Remove Source")
         self.remove_source_button.clicked.connect(self.remove_source)
         self.source_map = {}
         self.sources = QComboBox()
-        self.sources.currentTextChanged.connect(self.change_source)
         self.source_stack = QStackedWidget()
 
         self.data_points = QSpinBox()
@@ -52,7 +60,6 @@ class ConfigForm(QWidget):
         self.y_min = QDoubleSpinBox()
         self.y_min.setRange(float('-inf'), float('inf'))
         self.y_min.setValue(config.get("y_min", 0))
-        self.y_min = QDoubleSpinBox()
 
         self.x_label = QLineEdit()
         self.x_label.setText(config.get("x_label",""))
@@ -66,6 +73,7 @@ class ConfigForm(QWidget):
         self.init_UI()
         for source in config.get("sources", []):
             self.add_source(source)
+        self.sources.currentTextChanged.connect(self.change_source)
 
     def init_UI(self):
         layout = QFormLayout()
@@ -77,7 +85,7 @@ class ConfigForm(QWidget):
         layout.addRow(self.tr("X axis units"), self.x_units)
         layout.addRow(self.tr("Y axis label"), self.y_label)
         layout.addRow(self.tr("Y axis units"), self.y_units)
-        layout.addRow(self.new_source_button, self.new_source_name)
+        layout.addRow(self.new_source_button, self.new_source_name_edit)
         layout.addRow(self.remove_source_button, self.sources)
         layout.addWidget(self.source_stack)
         self.setLayout(layout)
@@ -100,7 +108,7 @@ class ConfigForm(QWidget):
         if text == "" or text in self.source_map.keys():
             return
         source_form = SourceForm(source)
-        self.source_map[self.new_source_name.text()] = source_form
+        self.source_map[self.new_source_name] = source_form
         self.sources.addItem(text)
         self.sources.setCurrentText(text)
         self.source_stack.addWidget(source_form)
@@ -121,20 +129,26 @@ class ConfigForm(QWidget):
 class SourceForm(QWidget):
     def __init__(self, config = {}) -> None:
         super().__init__()
-        self.name = QLineEdit(config.get("source_name", ""))
+        self.name = QLineEdit()
+        source_name: Optional[str] = config.get("source_name", None)
+        self.name.setText(source_name)
         self.available_sources = {
             "BLE Device" : "ble",
             "Internal Clock" : "time",
-                }
+        }
         self.source_type = QComboBox()
-        self.source_type.addItems(self.available_sources.keys())
+        source_keys = list(self.available_sources.keys())
+        source_values = list(self.available_sources.values())
+        self.source_type.addItems(source_keys)
+        self.source_type.setCurrentIndex(source_values.index(config.get("type","ble"))) 
         self.pen_color = QPushButton("Choose Color")
         self.pen_color_dialog = QColorDialog()
         self.pen_color.clicked.connect(self.pen_color_dialog.open)
         self.pen_color_input = QLineEdit()
+        self.pen_color_input.setText(config.get("pen_color", ""))
         self.pen_color_dialog.currentColorChanged.connect(self.set_color_text)
         self.args = QWidget() # TODO: Implement BLE args with client after
-        self.func = FuncForm()
+        self.func = FuncForm(config.get("func", {}))
         self.init_UI()
 
     def init_UI(self):
@@ -159,52 +173,53 @@ class SourceForm(QWidget):
     def set_color_text(self, color: QColor):
         self.pen_color_input.setText(color.name())
 
+class FuncInfo(IntEnum):
+    LABEL = 0
+    ID = 1
+    FORM = 2
+
 class FuncForm(QWidget):
 
-    def __init__(self) -> None:
+    
+
+    def __init__(self, config = {}) -> None:
         super().__init__()
+        print(config)
         self.form = QFormLayout()
         self.func_type = QComboBox()
-        self.available_funcs: Dict[str, ParamForm] = {
-                "Sin: asin(bx+c)+d": TrigForm(),
-                "Cos: acos(bx+c)+d": TrigForm(),
-                "Q Fixed-Point: mQn encoding": QFixedPointForm(),
-                "Identity: No Func": ParamForm(),
-                }
-
-        self.internal_names = {
-            "Sin: asin(bx+c)+d" : "sin",
-            "Cos: acos(bx+c)+d" : "cos",
-            "Q Fixed-Point: mQn encoding" : "fixed_point",
-            "Identity: No Func" : "identity",
-        }
-        self.func_type.addItems(self.available_funcs.keys())
-        self.func_type.currentTextChanged.connect(self.update_param_form)
+        self.funcs = [
+            ("Sin: asin(bx+c)+d", "sin", TrigForm()),
+            ("Cos: acos(bx+c)+d", "cos", TrigForm()),
+            ("Q Fixed-Point: mQn encoding", "fixed_point", QFixedPointForm()),
+            ("Identity: No Func", "identity", ParamForm()),
+        ]
+        self.func_type.addItems([func[FuncInfo.LABEL] for func in self.funcs])
         self.param_form: QStackedWidget = QStackedWidget()
-        for w in self.available_funcs.values():
+        for w in [func[FuncInfo.FORM] for func in self.funcs]:
             self.param_form.addWidget(w)
+        self.param_form.setCurrentIndex(
+                [func[FuncInfo.ID] for func in self.funcs].index(config.get("type", "sin"))
+        )
+        self.funcs[self.param_form.currentIndex()][FuncInfo.FORM].set_values(config.get("params", {}))
+        self.func_type.currentTextChanged.connect(self.update_param_form)
         self.init_UI()
 
     def init_UI(self):
         self.form.addRow(self.tr("Function Type"), self.func_type)
         self.form.addWidget(self.param_form)
-        
 
         self.setLayout(self.form)
         self.show()
 
     def update_param_form(self):
-        self.param_form.setCurrentWidget(self.available_funcs.get(self.func_type.currentText()))
+        self.param_form.setCurrentIndex(self.func_type.currentIndex())
         self.update()
 
     def get_config(self):
-        current_widget = self.param_form.currentWidget()
-        params = {}
-        if current_widget and issubclass(type(current_widget), ParamForm):
-            params = current_widget.get_config()
-
+        current_idx = self.param_form.currentIndex()
+        params = self.funcs[current_idx][FuncInfo.FORM].get_config()
         return {
-            "type" : self.internal_names.get(self.func_type.currentText()),
+            "type" : self.funcs[self.param_form.currentIndex()][FuncInfo.ID],
             "params" : params
         }
 
@@ -214,11 +229,15 @@ class ParamForm(QWidget):
 
     @abstractmethod
     def init_UI(self):
-        return
+        pass
 
     @abstractmethod
     def get_config(self):
         return {}
+
+    @abstractmethod
+    def set_values(self, config):
+        pass
 
 class TrigForm(ParamForm):
     def __init__(self) -> None:
@@ -248,6 +267,12 @@ class TrigForm(ParamForm):
             "c" : self.c.value(),
             "d" : self.d.value(),
                 }
+    
+    def set_values(self, config):
+        self.a.setValue(config.get("a", 0))
+        self.b.setValue(config.get("b", 0))
+        self.c.setValue(config.get("c", 0))
+        self.d.setValue(config.get("d", 0))
 
 class QFixedPointForm(ParamForm):
     def __init__(self) -> None:
@@ -276,8 +301,8 @@ class QFixedPointForm(ParamForm):
     def get_config(self):
         return {"chunks" : [ c.get_config() for c in self.chunks ]}
 
-    def add_chunk(self):
-        new_chunk = QFixedPointChunk()
+    def add_chunk(self, chunk = {}):
+        new_chunk = QFixedPointChunk(chunk)
         self.vbox.insertWidget(len(self.chunks), new_chunk)
         self.chunks.append(new_chunk)
 
@@ -288,15 +313,22 @@ class QFixedPointForm(ParamForm):
         self.vbox.removeWidget(to_remove)
         self.updateGeometry()
 
+    def set_values(self, config):
+        for chunk in config.get("chunks", []):
+            self.add_chunk(chunk)
+
 class QFixedPointChunk(ParamForm):
-    def __init__(self) -> None:
+    def __init__(self, chunk = {}) -> None:
         super().__init__()
         self.length = QSpinBox()
         self.length.setRange(0, 512*8)
         self.length.setSingleStep(2)
+        self.length.setValue(chunk.get("length", 0))
         self.remainder = QSpinBox()
         self.remainder.setRange(0, 512*8)
+        self.remainder.setValue(chunk.get("remainder", 0))
         self.signed = QCheckBox()
+        self.signed.setChecked(chunk.get("checked", False))
         self.init_UI()
 
     def init_UI(self):

@@ -41,8 +41,8 @@ class Workspace(QWidget):
 
         # setup inner widgets
         self.sidebar = Sidebar()
-        self.config_dialog = GraphConfig()
-        self.config_dialog.hide()
+        # self.config_dialog = GraphConfig(self.config.get("plots", {}))
+        # self.config_dialog.hide()
 
         self.config_window: ConfigSelection = ConfigSelection(
             self.logger,
@@ -160,7 +160,9 @@ class Workspace(QWidget):
         self.plots.restart()
 
     def edit_config(self):
-        config = self.config_dialog.get_config()
+        config_dialog = GraphConfig(self.config.get("plots", {}))
+        config_dialog.hide()
+        config = config_dialog.get_config()
         if not config:
             return
         self.config["plots"] = config

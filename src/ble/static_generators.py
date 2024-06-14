@@ -43,6 +43,5 @@ def param_sin(args, data):
     b = args["b"]
     c = args["c"]
     d = args["d"]
-    print(args)
     return a*math.sin(b*data + c)+d
 

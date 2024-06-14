@@ -26,6 +26,7 @@ class GraphConfig(QDialog):
         self.init_UI()
         for row in config.get("rows", []):
             self.add_row(row)
+        self.row_tabs.setCurrentIndex(0)
 
     def init_UI(self):
         self.row_tabs.setTabPosition(QTabWidget.TabPosition.West)
@@ -79,6 +80,7 @@ class GraphConfig(QDialog):
         self.row_tabs.insertTab(self.row_tabs.count()-1, new_tabs, str(self.row_tabs.count()))
         for graph in graphs:
             self.add_graph(new_tabs, len(self.graphs)-1, graph)
+        new_tabs.setCurrentIndex(0)
 
 
     def remove_row(self):
