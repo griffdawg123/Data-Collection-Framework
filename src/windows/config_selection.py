@@ -47,7 +47,7 @@ class ConfigSelection(QWidget):
                 json_config = {}
                 json_config["name"] = new_workspace_filename
                 json_config["devices"] = []
-                json_config["plots"] = []
+                json_config["plots"] = { "rows": [], "data_rate": 60}
                 new_file.write(json.dumps(json_config))
             self.logger.info(f"New workspace created with name: {new_workspace_filename}")
             self.config_url = f"config/workspaces/{src.helpers.format_config_name(new_workspace_filename)}.config"

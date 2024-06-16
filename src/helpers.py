@@ -51,6 +51,8 @@ def parse_bytearray(bytes: bytearray, chunks: Optional[List] = None) -> List[flo
     return res
 
 def hex_to_rgb(hex):
+    if hex == "":
+        hex = "FFFFFF"
     hex = hex.lstrip("#")
     assert len(hex) == 6
     return tuple([int(hex[i:i+2], 16) for i in range(0, 6, 2)])

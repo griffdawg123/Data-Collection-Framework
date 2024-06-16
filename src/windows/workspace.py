@@ -15,6 +15,7 @@ from src import helpers
 from src.loaders.config_loader import ConfigLoader
 from src.widgets.data_plot import Plots
 from src.widgets.sidebar import Sidebar
+from src.widgets.graph_config import GraphConfig
 from src.windows.config_selection import ConfigSelection
 from src.windows.new_device import NewDevice
 from src.logs.logs_setup import LoggerEnv
@@ -40,8 +41,8 @@ class Workspace(QWidget):
 
         # setup inner widgets
         self.sidebar = Sidebar()
-        # self.plots = PlotTray()
-        # self.plot_config = self.config.get("plots")
+        # self.config_dialog = GraphConfig(self.config.get("plots", {}))
+        # self.config_dialog.hide()
 
         self.config_window: ConfigSelection = ConfigSelection(
             self.logger,
@@ -72,6 +73,7 @@ class Workspace(QWidget):
             self.new_device,
             self.load_device,
             self.restart,
+            self.edit_config,
             self.clients
         )
         
@@ -156,6 +158,21 @@ class Workspace(QWidget):
 
     def restart(self):
         self.plots.restart()
+
+    def edit_config(self):
+        config_dialog = GraphConfig(self.config.get("plots", {}))
+        config_dialog.hide()
+        config = config_dialog.get_config()
+        if not config:
+            return
+        self.config["plots"] = config
+        self.workspace_layout.removeWidget(self.plots)
+        self.plots.stop()
+        self.plots.close()
+        self.plots = Plots(self.config["plots"], self.clients)
+        self.workspace_layout.addWidget(self.plots)
+        self.workspace_layout.setStretch(0, 1)
+        self.workspace_layout.setStretch(1, 9)
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")
