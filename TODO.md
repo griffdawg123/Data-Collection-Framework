@@ -10,6 +10,7 @@
 ## In Progress
 - [ ] Implement characteristic scanning for BLE devices
 ## Backlog
+- [ ] Make it so that By default, args is shown as BLE source is also the default
 - [ ] Add start stop controls
 - [ ] Reimplement restart function
 - [ ] JSON Schema implementation for validation

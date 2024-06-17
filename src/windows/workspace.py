@@ -97,6 +97,7 @@ class Workspace(QWidget):
         self.clients[conf["name"]] = client
         self.add_device_to_conf(conf["name"])
         self.sidebar.add_client(conf["name"], client)
+        self.plot_config
 
     def add_device_to_conf(self, device_name):
         devices = self.config["devices"]
@@ -160,7 +161,7 @@ class Workspace(QWidget):
         self.plots.restart()
 
     def edit_config(self):
-        config_dialog = GraphConfig(self.config.get("plots", {}))
+        config_dialog = GraphConfig(self.config.get("plots", {}), self.clients)
         config_dialog.hide()
         config = config_dialog.get_config()
         if not config:

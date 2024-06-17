@@ -156,11 +156,7 @@ if __name__ == "__main__":
                 {
                     "type" : "ble",
                     "func" : {
-<<<<<<< HEAD
-                        "type" : "sin",
-=======
                         "name" : "fixed_point",
->>>>>>> 6fa1b66b188abee8b9b0d8c2ca1edee20cf7b269
                         "params" : {
                             "chunks" : [
                                 {"length":32,"signed":False,"remainder":16}    
