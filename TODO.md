@@ -6,12 +6,13 @@
 - [ ] Rewrite Data Collection using coroutines
 - [x] Graph Displaying
 - [ ] Allow for in application rewriting of plot config 
+- [ ] Construct rewriting plot config editing from input config
 ## In Progress
+- [ ] Implement characteristic scanning for BLE devices
 ## Backlog
 - [ ] Add start stop controls
 - [ ] Reimplement restart function
 - [ ] JSON Schema implementation for validation
-- [ ] Construct rewriting plot config editing from input config
 - [ ] can construct workspace from empty file or json with missing tags
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs

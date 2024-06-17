@@ -5,6 +5,7 @@ import sys
 from typing import Dict, List, Optional, Tuple
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
+        QButtonGroup,
         QCheckBox,
         QColorDialog,
         QComboBox,
@@ -14,6 +15,7 @@ from PyQt6.QtWidgets import (
         QLabel,
         QLineEdit,
         QPushButton,
+        QRadioButton,
         QSpinBox,
         QStackedWidget,
         QVBoxLayout,
@@ -21,11 +23,11 @@ from PyQt6.QtWidgets import (
         )
 
 class ConfigForm(QWidget):
-    def __init__(self, config = {}) -> None:
+    def __init__(self, config = {}, clients = {}) -> None:
         super().__init__()
         self.title = QLineEdit()
         self.title.setText(config.get("title", ""))
-
+        self.clients = clients
         self.new_source_name_edit = QLineEdit()
         self.new_source_name_edit.textChanged.connect(
                 lambda s: self.new_source_button.setDisabled(
@@ -107,7 +109,7 @@ class ConfigForm(QWidget):
         text = source.get("source_name", "")
         if text == "" or text in self.source_map.keys():
             return
-        source_form = SourceForm(source)
+        source_form = SourceForm(source, self.clients)
         self.source_map[self.new_source_name] = source_form
         self.sources.addItem(text)
         self.sources.setCurrentText(text)
@@ -127,7 +129,7 @@ class ConfigForm(QWidget):
 
 
 class SourceForm(QWidget):
-    def __init__(self, config = {}) -> None:
+    def __init__(self, config = {}, clients = {}) -> None:
         super().__init__()
         self.name = QLineEdit()
         source_name: Optional[str] = config.get("source_name", None)
@@ -140,6 +142,7 @@ class SourceForm(QWidget):
         source_keys = list(self.available_sources.keys())
         source_values = list(self.available_sources.values())
         self.source_type.addItems(source_keys)
+        self.source_type.currentIndexChanged.connect(lambda idx: self.args.show() if idx == 0 else self.args.hide())
         self.source_type.setCurrentIndex(source_values.index(config.get("type","ble"))) 
         self.pen_color = QPushButton("Choose Color")
         self.pen_color_dialog = QColorDialog()
@@ -147,7 +150,8 @@ class SourceForm(QWidget):
         self.pen_color_input = QLineEdit()
         self.pen_color_input.setText(config.get("pen_color", ""))
         self.pen_color_dialog.currentColorChanged.connect(self.set_color_text)
-        self.args = QWidget() # TODO: Implement BLE args with client after
+        self.args = BLESourceArgsForm(config, clients) # TODO: Implement BLE args with client after
+        # If current source is BLE - show the args form, else dont
         self.func = FuncForm(config.get("func", {}))
         self.init_UI()
 
@@ -155,9 +159,11 @@ class SourceForm(QWidget):
         layout = QFormLayout()
         layout.addRow(self.tr("Source name: "), self.name)
         layout.addRow(self.tr("Source type: "), self.source_type)
+        layout.addWidget(self.args)
         layout.addRow(self.pen_color, self.pen_color_input)
         layout.addRow(QLabel("Function: "), self.func)
 
+        self.args.show() if self.source_type.currentIndex == 0 else self.args.hide()
 
         self.setLayout(layout)
         self.show()
@@ -172,6 +178,46 @@ class SourceForm(QWidget):
 
     def set_color_text(self, color: QColor):
         self.pen_color_input.setText(color.name())
+
+class BLESourceArgsForm(QWidget):
+    def __init__(self, config = {}, clients = {}) -> None:
+        super().__init__()
+        self.config = config
+        self.clients = clients
+        self.current_client = None
+        self.current_type = "read"
+        self.read = QRadioButton("Read")
+        self.read.setChecked(self.config.get("type", self.current_type) == "read")
+        self.notify = QRadioButton("Notify")
+        self.notify.setChecked(self.config.get("type", self.current_type) == "notify")
+        self.button_group = QButtonGroup()
+        self.button_group.addButton(self.read)
+        self.button_group.addButton(self.notify)
+        self.button_group.buttonClicked.connect(self.select_type)
+        self.client_select = QComboBox()
+        self.client_select.addItems(self.clients.keys())
+        self.client_select.setCurrentText(self.config.get("name", ""))
+        self.characteristic = QComboBox()
+        self.init_UI()
+        # Read / Notify
+        # Select Characteristic or enter UUID (selecting characteristic will enter UUID)
+
+    def init_UI(self):
+        layout = QFormLayout()
+        layout.addRow(self.read, self.notify)
+        layout.addRow(self.tr("Client: "), self.client_select)
+        layout.addRow(self.tr("Characteristic: "), self.characteristic)
+        self.setLayout(layout)
+
+    def select_type(self, button):
+        if button.text() == self.read.text():
+            self.current_type = "read"
+        elif button.text() == self.notify.text():
+            self.current_type = "notify"
+        
+    def select_client(self):
+        pass
+
 
 class FuncInfo(IntEnum):
     LABEL = 0

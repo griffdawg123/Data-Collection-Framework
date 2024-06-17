@@ -42,8 +42,11 @@ def get_coro(type, next_coro=None, args = {}, clients: Dict[str, BleakClient] = 
             # Args contains the name of the ble device
             loop = asyncio.get_event_loop()
             print(clients)
-            client: BleakClient = clients[args.get("name")]
-            print(client)
+            try:
+                client: BleakClient = clients[args.get("name")]
+                print(client)
+            except KeyError:
+                return new_coro
             
             if not client.is_connected:
                 print("not connected")
