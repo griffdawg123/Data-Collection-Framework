@@ -11,7 +11,7 @@ async def scan_for_devices(future: asyncio.Future) -> None:
     future.set_result([(x, y) for x, y in devices.values() if y.local_name])
 
 def get_services(client: BleakClient) -> Dict:
-    if not client:
+    if not client or not client.is_connected:
         return {}
     characteristics = client.services.characteristics
     services = {}

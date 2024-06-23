@@ -215,8 +215,10 @@ class BLESourceArgsForm(QWidget):
         self.client_select.setCurrentText(self.config.get("name", ""))
         self.client_select.currentTextChanged.connect(self.select_client)
         self.characteristic = QComboBox()
+        self.characteristic.addItem("--- not connected ---")
         print("Current client: ", self.current_client)
-        if self.current_client:
+        if self.current_client and self.current_client.is_connected:
+            self.characteristic.removeItem(0)
             self.characteristic.addItems(get_services(self.current_client).get(self.current_type, {}).keys())
         self.characteristic.currentTextChanged.connect(self.set_characteristics)
         self.UUID_input = QLineEdit()

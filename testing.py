@@ -1,35 +1,12 @@
-import sys
-
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (
-    QApplication,
-    QLabel,
-    QMainWindow,
-    QPushButton,
-    QTabWidget,
-    QWidget,
-)
+from src.ble.static_generators import func_coro, source_coro, sink_coro
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+sink_source = sink_coro(print)
+next(sink_source)
+# sqr_source = func_coro(lambda x: x**2, sink_source)
+# next(sqr_source)
+time_source = source_coro(sink_source)
+next(time_source)
 
-        self.setWindowTitle("My App")
-
-        tabs = QTabWidget()
-        tabs.setTabPosition(QTabWidget.TabPosition.West)
-        tabs.setMovable(True)
-
-        for n, color in enumerate(["red", "green", "blue", "yellow"]):
-            tabs.addTab(QLabel(color), color)
-
-        self.setCentralWidget(tabs)
-
-
-app = QApplication(sys.argv)
-
-window = MainWindow()
-window.show()
-
-app.exec()
+for i in range(10):
+    next(time_source)

@@ -34,13 +34,13 @@ def format_config_name(string: str) -> str:
 def get_files(dir: str) -> list[str]:
     return next(walk(dir), (None, None, []))[2]
 
-def parse_bytearray(bytes: bytearray, chunks: Optional[List[Dict]] = None) -> List[float]:
+def parse_bytearray(chunks: Optional[List[Dict]] = None, bytes: bytearray = bytearray(0)) -> List[float]:
     # need to be able to check for variable number of chunks of various encoding and lengths
     # tuples - length and remainder bits
     # (len (in bits), sign, remainders (in bits))
     if not chunks: chunks = [{"length": len(bytes)*8, "signed": True, "remainder":0}]
     total_len = len(bytes)
-    assert total_len*8 == sum([c[0] for c in chunks])
+    assert total_len*8 == sum([c["length"] for c in chunks])
     # if m and n: assert log(m+n, 2) == num_bytes
     res = []
     for l, sign, rem in itemgetter("length", "signed", "remainder")(chunks):

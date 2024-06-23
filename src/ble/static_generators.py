@@ -4,9 +4,54 @@ import time
 import math
 
 from bleak import BleakClient
-from typing import Dict
+from typing import Callable, Coroutine, Dict, Generator
 
 from src.helpers import parse_bytearray
+
+# need to be able to update internal value until it needs to be updated
+# send to value can happen whenever, when next is called, we pull the current value
+
+# Takes a coroutine to pass data to
+
+# Call next to update graph data, call send to update internal data
+# Implement threadsafe queue
+def source_coro(next_coro):
+    started = False
+    value = None
+    try:
+        while True:
+            data = yield
+            print("Yielded:", data)
+            if started:
+                if not data: # if 'next' --> Retrieve value
+                    to_send = value if value else time.time()
+                    print("Sending:", to_send)
+                    next_coro.send(to_send)
+                else: # if sent value --> Set value
+                    value = data
+            started = True
+    except:
+        print("Exiting Coro")
+
+def func_coro(func, next_coro):
+    try:
+        while True:
+            data = yield
+            print(func)
+            print("Func:", func(data))
+            next_coro.send(func(data))
+    except:
+        print("Exiting Coro")
+
+
+# Takes a function to sink data into
+def sink_coro(func: Callable):
+    try:
+        while True:
+            data = yield
+            func(data)
+    except:
+        print("Exiting Coro")
 
 def coro(func, next_coro=None):
     try:

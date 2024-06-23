@@ -74,7 +74,9 @@ class Workspace(QWidget):
             self.load_device,
             self.restart,
             self.edit_config,
-            self.clients
+            self.clients,
+            self.play,
+            self.pause,
         )
         
         # Plot initialization
@@ -174,6 +176,12 @@ class Workspace(QWidget):
         self.workspace_layout.addWidget(self.plots)
         self.workspace_layout.setStretch(0, 1)
         self.workspace_layout.setStretch(1, 9)
+
+    def play(self):
+        self.plots.start()
+
+    def pause(self):
+        self.plots.stop()
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")

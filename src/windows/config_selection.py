@@ -6,15 +6,16 @@ import json
 from src.windows.new_config import NewConfig
 from src.windows.load_config import LoadConfig
 import src.helpers
+from pathlib import Path
 
 class ConfigSelection(QWidget):
     def __init__(self, logger: logging.Logger, set_config_path: Callable[[str], None]) -> None:
         super().__init__()
         self.logger = logger
-        self.init_gui()
         self.set_config_func = set_config_path
+        self.init_UI()
 
-    def init_gui(self) -> None:
+    def init_UI(self) -> None:
         self.setWindowTitle("Data Collection Framework")
         self.resize(720, 540)
         src.helpers.center(self)
@@ -38,6 +39,7 @@ class ConfigSelection(QWidget):
 
     def new_clicked(self):
         self.logger.debug("New Workspace Button Clicked")
+        Path("config/workspaces").mkdir(parents=True, exist_ok=True)
 
         new_workspace_dialogue = NewConfig()
         success, new_workspace_filename = new_workspace_dialogue.get_file_name()
