@@ -1,4 +1,5 @@
 import asyncio
+from collections import deque
 import functools
 import time
 import math
@@ -17,18 +18,22 @@ from src.helpers import parse_bytearray
 # Implement threadsafe queue
 def source_coro(next_coro):
     started = False
-    value = None
+    values = deque(maxlen=5)
     try:
         while True:
             data = yield
             print("Yielded:", data)
             if started:
                 if not data: # if 'next' --> Retrieve value
-                    to_send = value if value else time.time()
+                    to_send = time.time()
+                    if len(values) > 0:
+                        to_send = values.popleft()
                     print("Sending:", to_send)
                     next_coro.send(to_send)
                 else: # if sent value --> Set value
-                    value = data
+                    values.appendleft(data)
+                    if len(values) > 2:
+                        values.pop()
             started = True
     except:
         print("Exiting Coro")
@@ -52,62 +57,6 @@ def sink_coro(func: Callable):
             func(data)
     except:
         print("Exiting Coro")
-
-def coro(func, next_coro=None):
-    try:
-        while True:
-            data = yield
-            if next_coro:
-                if data:
-                    next_coro.send(func(data))
-                else:
-                    next_coro.send(func())
-            else:
-                if data:
-                    func(data)
-                else:
-                    func()
-    except GeneratorExit:
-        print("Exiting Coro")
-
-# For a non BLE source, time.time is called upon timeout
-# Perhaps for BLE, notify callback sends a value to the coroutine, graph is only
-# updated upon timeout
-def get_coro(type, next_coro=None, args = {}, clients: Dict[str, BleakClient] = {}):
-    new_coro = coro(lambda x: x, next_coro)
-    match type:
-        case "time":
-            return coro(time.time, next_coro)
-        case "sin":
-            print("sin")
-            return coro(functools.partial(param_sin, args), next_coro)
-        case "cos":
-            return coro(functools.partial(param_cos, args), next_coro)
-        case "ble":
-            # Args contains the name of the ble device
-            loop = asyncio.get_event_loop()
-            print(clients)
-            try:
-                client: BleakClient = clients[args.get("name")]
-                print(client)
-            except KeyError:
-                return new_coro
-            
-            if not client.is_connected:
-                print("not connected")
-                _ = loop.create_task(client.connect())
-
-            
-            notify_task = loop.create_task(
-                    client.start_notify(args.get("UUID"), 
-                    functools.partial(ble_unpack, next_coro))
-            )
-            notify_task.add_done_callback(lambda _: print("Notify Started"))
-        case "fixed_point":
-            return coro(functools.partial(parse_bytearray), next_coro)
-        case _:
-            print("returning blank coro")
-            return new_coro
 
 def param_cos(args, data):
     a = args["a"]

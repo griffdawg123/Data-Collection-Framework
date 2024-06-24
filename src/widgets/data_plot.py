@@ -1,4 +1,5 @@
 import functools
+from typing import Optional
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 from queue import Queue
@@ -8,7 +9,7 @@ import asyncio
 from qasync import QEventLoop
 from bleak import BleakClient
 
-from src.ble.static_generators import coro, func_coro, get_coro, param_cos, param_sin, sink_coro, source_coro
+from src.ble.static_generators import func_coro, param_cos, param_sin, sink_coro, source_coro
 from src.helpers import hex_to_rgb, parse_bytearray
 
 class Plots(pg.GraphicsLayoutWidget):
@@ -64,9 +65,19 @@ class Plots(pg.GraphicsLayoutWidget):
                     sink
                     )
             next(func)
-            # TODO: Connect BLE client if exists
+
             data_source = source_coro(func)
             next(data_source)
+
+            client: Optional[BleakClient] = None
+            if source.get("type", "") == "ble":
+                args = source.get("args", {})
+                client = self.clients.get(args.get("name", None), None)
+                assert(client)
+                loop = asyncio.get_event_loop()
+                notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
+                notify_task.add_done_callback(lambda _: print("notify started"))
+                
 
             curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
             curve.setData(queue.queue)
@@ -77,6 +88,7 @@ class Plots(pg.GraphicsLayoutWidget):
                 "func" : func,
                 "source" : data_source,
                 "curve" : curve,
+                "client" : client,
             }
             self.data[i][j].append(source_info)
 
@@ -94,7 +106,6 @@ class Plots(pg.GraphicsLayoutWidget):
                 for source in plot:
                     source["curve"].setData(source["data"].queue)
 
-    # TODO - replace with next
     def on_timeout(self, source):
         next(source)
         

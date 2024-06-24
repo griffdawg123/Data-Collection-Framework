@@ -13,6 +13,7 @@
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
 ## Backlog
+- [ ] Start notify jobs when start is clicked so the actual start of the graph is after all successful
 - [ ] Add threadsafe queue in source coroutine
 - [ ] Make it so that By default, args is shown as BLE source is also the default
 - [ ] JSON Schema implementation for validation
