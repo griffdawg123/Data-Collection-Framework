@@ -74,7 +74,9 @@ class Workspace(QWidget):
             self.load_device,
             self.restart,
             self.edit_config,
-            self.clients
+            self.clients,
+            self.play,
+            self.pause,
         )
         
         # Plot initialization
@@ -97,6 +99,7 @@ class Workspace(QWidget):
         self.clients[conf["name"]] = client
         self.add_device_to_conf(conf["name"])
         self.sidebar.add_client(conf["name"], client)
+        self.plot_config
 
     def add_device_to_conf(self, device_name):
         devices = self.config["devices"]
@@ -160,7 +163,7 @@ class Workspace(QWidget):
         self.plots.restart()
 
     def edit_config(self):
-        config_dialog = GraphConfig(self.config.get("plots", {}))
+        config_dialog = GraphConfig(self.config.get("plots", {}), self.clients)
         config_dialog.hide()
         config = config_dialog.get_config()
         if not config:
@@ -173,6 +176,12 @@ class Workspace(QWidget):
         self.workspace_layout.addWidget(self.plots)
         self.workspace_layout.setStretch(0, 1)
         self.workspace_layout.setStretch(1, 9)
+
+    def play(self):
+        self.plots.start()
+
+    def pause(self):
+        self.plots.stop()
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")

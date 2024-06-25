@@ -11,18 +11,33 @@ async def scan_for_devices(future: asyncio.Future) -> None:
     future.set_result([(x, y) for x, y in devices.values() if y.local_name])
 
 def get_services(client: BleakClient) -> Dict:
+    if not client or not client.is_connected:
+        return {}
     characteristics = client.services.characteristics
-    return {
-        c.description: {
-            "UUID": c.uuid,
-            "properties": c.properties,
-            }
-        for _, c in characteristics.items()
-    }
+    services = {}
+    for _, c in characteristics.items():
+        for property in c.properties:
+            service_properties = services.get(property, {})
+            service_properties[c.description] = c.uuid
+            services[property] = service_properties
+
+    return services
 
 async def main():
     async with BleakClient("F1:EC:95:17:0A:62") as client:
-        print(get_services(client))
+        services = get_services(client)
+        print(services["read"])
+        print(services["write"])
+        print(services["notify"])
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+'''
+{
+    "read" : {
+        description : uuid,
+        }
+}
+'''

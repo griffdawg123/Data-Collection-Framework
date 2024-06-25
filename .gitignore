@@ -11,3 +11,5 @@ logs/*
 node_modules
 package.json
 package-lock.json
+pyrightconfig.json
+

@@ -9,8 +9,9 @@ MAX_ROWS = 3
 MAX_GRAPHS = 3
 
 class GraphConfig(QDialog):
-    def __init__(self, config = {}) -> None:
+    def __init__(self, config = {}, clients = {}) -> None:
         super().__init__()
+        self.clients = clients
         self.data_rate = QSpinBox()
         self.data_rate.setRange(1, 100)
         self.data_rate.setValue(config.get("data_rate", 60))
@@ -120,7 +121,7 @@ class GraphConfig(QDialog):
     def add_graph(self, row_tabs_widget: QTabWidget, row_idx, graph_config = {}):
         new_graph = QWidget()
         new_graph_layout = QVBoxLayout()
-        new_graph_form = ConfigForm(graph_config)
+        new_graph_form = ConfigForm(graph_config, self.clients)
         new_graph_button = QPushButton("Remove Graph")
         new_graph_layout.addWidget(new_graph_form)
         new_graph_layout.addWidget(new_graph_button)

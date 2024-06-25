@@ -6,13 +6,18 @@
 - [ ] Rewrite Data Collection using coroutines
 - [x] Graph Displaying
 - [ ] Allow for in application rewriting of plot config 
-## In Progress
-## Backlog
+- [ ] Construct rewriting plot config editing from input config
+- [ ] Implement characteristic scanning for BLE devices
 - [ ] Add start stop controls
 - [ ] Reimplement restart function
-- [ ] JSON Schema implementation for validation
-- [ ] Construct rewriting plot config editing from input config
+## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
+## Backlog
+- [ ] Change Source form to allow for choice of which Bytearray chunk to be used
+- [ ] Start notify jobs when start is clicked so the actual start of the graph is after all successful
+- [ ] Add threadsafe queue in source coroutine
+- [ ] Make it so that By default, args is shown as BLE source is also the default
+- [ ] JSON Schema implementation for validation
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs
 - [ ] Data Saving
@@ -20,3 +25,5 @@
 ## Continuous Integration
 - [ ] Testing
 - [ ] Logging
+## "Done"
+- [x] Individual plot widget - Implement with coroutine method & new bit parsing

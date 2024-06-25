@@ -18,7 +18,7 @@ TEST_DEVICE = {
     "address" : "test address"
 }
 
-LOGGER = logging.getLogger(LoggerEnv.DEV)
+LOGGER = logging.getLogger(LoggerEnv.DEV.name)
 
 @pytest.fixture(scope="session", autouse=True)
 def create_config(request):

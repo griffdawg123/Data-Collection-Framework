@@ -1,16 +1,25 @@
 import functools
+from typing import Optional
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 from queue import Queue
 import pyqtgraph as pg
 import sys
+import asyncio
+from qasync import QEventLoop
+from bleak import BleakClient
 
-from src.ble.static_generators import coro, get_coro
-from src.helpers import hex_to_rgb
+from src.ble.static_generators import func_coro, param_cos, param_sin, sink_coro, source_coro
+from src.helpers import hex_to_rgb, parse_bytearray
 
 class Plots(pg.GraphicsLayoutWidget):
     def __init__(self, config, clients):
         super().__init__(show=True, title=config.get("title", ""))
+        self.funcs = {
+            "sin" : param_sin,
+            "cos" : param_cos,
+            "fixed_point" : parse_bytearray,
+        }
         self.config = config
         self.clients = clients
         self.data = []
@@ -18,7 +27,7 @@ class Plots(pg.GraphicsLayoutWidget):
         self.timer = QTimer()
         self.timer.setInterval(int(1000/config.get("data_rate", 60)))
         self.init_timers()
-        self.timer.start()
+        # self.timer.start()
     
     def init_rows(self, plot_configs):
         for i, row in enumerate(plot_configs):
@@ -46,12 +55,31 @@ class Plots(pg.GraphicsLayoutWidget):
             # ith row, jth plot, kth source
             queue = Queue(maxsize=datapoints)
             [ queue.put(0) for _ in range(datapoints) ]
-            sink = coro(functools.partial(self.update_data, i, j, k))
-            sink.__next__()
-            func = get_coro(source.get("func").get("type"), sink, source.get("func").get("params"))
-            func.__next__()
-            data_source = get_coro(source.get("type"), func)
-            data_source.__next__()
+            sink = sink_coro(functools.partial(self.update_data, i, j, k))
+            next(sink)
+            func = func_coro(
+                    functools.partial(
+                        self.funcs.get(source.get("func", {}).get("type"), lambda x: x),
+                        source.get("func", {}).get("params", {})
+                    ),
+                    sink
+                    )
+            next(func)
+
+            data_source = source_coro(source.get("type", "") == "ble", func)
+            next(data_source)
+
+            client: Optional[BleakClient] = None
+            if source.get("type", "") == "ble":
+                args = source.get("args", {})
+                client = self.clients.get(args.get("name"), None)
+                print(args.get("name"))
+                print(self.clients)
+                assert(client)
+                loop = asyncio.get_event_loop()
+                notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
+                notify_task.add_done_callback(lambda _: print("notify started"))
+                
 
             curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
             curve.setData(queue.queue)
@@ -62,14 +90,18 @@ class Plots(pg.GraphicsLayoutWidget):
                 "func" : func,
                 "source" : data_source,
                 "curve" : curve,
+                "client" : client,
             }
             self.data[i][j].append(source_info)
 
     def update_data(self, i, j, k, data):
         # update then queue of this data
+        print("Data: ", data)
         queue: Queue = self.data[i][j][k].get("data")
         queue.get()
-        queue.put(data)
+        # TODO: Change input form to allow choice on different chunks
+        # queue.put(data)
+        queue.put(data[0])
 
     def update_plots(self):
         # print("Updating plots")
@@ -78,15 +110,16 @@ class Plots(pg.GraphicsLayoutWidget):
                 for source in plot:
                     source["curve"].setData(source["data"].queue)
 
-    def on_timeout(self, source, data):
-        source.send(data)
+    def on_timeout(self, source):
+        next(source)
+        
 
     def init_timers(self):
         for row in self.data:
             for plot in row:
                 for source in plot:
                     print("Plot")
-                    self.timer.timeout.connect(functools.partial(self.on_timeout, source["source"], None))
+                    self.timer.timeout.connect(functools.partial(self.on_timeout, source["source"]))
                     print("Sending to source", source)
         self.timer.timeout.connect(self.update_plots)
 
@@ -103,7 +136,10 @@ class Plots(pg.GraphicsLayoutWidget):
     def stop(self):
         self.timer.stop()
 
-        
+    def start(self):
+        print("start")
+        self.timer.start()
+
 if __name__ == "__main__":
     config = {
     "rows" : [
@@ -123,7 +159,7 @@ if __name__ == "__main__":
                             "d" : 0,
                         },
                     },
-                    "pen_color" : "FFFF00",
+                    "pen_colour" : "FFFF00",
                     "source_name" : "sin"
                 }
             ],
@@ -139,6 +175,46 @@ if __name__ == "__main__":
     ],
     "data_rate" : 60
 }
+
+
+    # config = {
+    # "rows" : [
+    #   [
+    #     {
+    #         "title" : "BLE Plot",
+    #         "sources" : [
+    #             {
+    #                 "type" : "ble",
+    #                 "func" : {
+    #                     "name" : "fixed_point",
+    #                     "params" : {
+    #                         "chunks" : [
+    #                             {"length":32,"signed":False,"remainder":16}    
+    #                         ]
+    #                     },
+    #                 },
+    #                 "pen_colour" : "FFFF00",
+    #                 "source_name" : "Heading",
+    #                 "args" : {
+    #                     "UUID":  "EF680409-9B35-4933-9B10-52FFA9740042",
+    #                     "name": "Thingy",
+    #                 },
+    #             }
+    #         ],
+    #         "num_data_points" : 100,
+    #         "y_max" : 360,
+    #         "y_min" : 0,
+    #         "x_label" : "Time",
+    #         "x_units" : "s",
+    #         "y_label" : "Heading",
+    #         "y_units" : "Degrees"
+    #     }
+    #   ]
+    # ],
+    # "data_rate" : 60
+# }
+
     app = QApplication(sys.argv)
     plots = Plots(config, {})
-    app.exec()
+    plots.start()
+    sys.exit(app.exec())
