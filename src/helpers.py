@@ -34,20 +34,30 @@ def format_config_name(string: str) -> str:
 def get_files(dir: str) -> list[str]:
     return next(walk(dir), (None, None, []))[2]
 
-def parse_bytearray(chunks: Optional[List[Dict]] = None, bytes: bytearray = bytearray(0)) -> List[float]:
+def parse_bytearray(chunks_config: Optional[Dict], bytes: bytearray) -> List[float]:
     # need to be able to check for variable number of chunks of various encoding and lengths
     # tuples - length and remainder bits
     # (len (in bits), sign, remainders (in bits))
-    if not chunks: chunks = [{"length": len(bytes)*8, "signed": True, "remainder":0}]
+    print(bytes, bytearray(0))
+    if not chunks_config: chunks = [{"length": len(bytes)*8, "signed": True, "remainder":0}]
+    else:
+        chunks = chunks_config["chunks"]
+    if not bytes: return [0]*len(chunks)
     total_len = len(bytes)
     assert total_len*8 == sum([c["length"] for c in chunks])
     # if m and n: assert log(m+n, 2) == num_bytes
     res = []
-    for l, sign, rem in itemgetter("length", "signed", "remainder")(chunks):
+    # for l, sign, rem in itemgetter("length", "signed", "remainder")(chunks):
+    print(chunks)
+    for chunk in chunks:
+        l = chunk["length"]
+        sign = chunk["signed"]
+        rem = chunk["remainder"]
+        print(l, sign, rem)
         assert log(l, 2).is_integer()
         signed_flag = "i" if sign else "u"
         dt = np.dtype(f"{signed_flag}{int(l/8)}")
-        val = float(np.frombuffer(bytes, dtype=dt))/(2**rem)
+        val = float(np.frombuffer(bytes, dtype=dt)[0])/(2**rem)
         res.append(val)
     return res
 

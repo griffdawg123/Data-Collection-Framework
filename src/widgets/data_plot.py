@@ -66,13 +66,15 @@ class Plots(pg.GraphicsLayoutWidget):
                     )
             next(func)
 
-            data_source = source_coro(func)
+            data_source = source_coro(source.get("type", "") == "ble", func)
             next(data_source)
 
             client: Optional[BleakClient] = None
             if source.get("type", "") == "ble":
                 args = source.get("args", {})
-                client = self.clients.get(args.get("name", None), None)
+                client = self.clients.get(args.get("name"), None)
+                print(args.get("name"))
+                print(self.clients)
                 assert(client)
                 loop = asyncio.get_event_loop()
                 notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
@@ -97,7 +99,9 @@ class Plots(pg.GraphicsLayoutWidget):
         print("Data: ", data)
         queue: Queue = self.data[i][j][k].get("data")
         queue.get()
-        queue.put(data)
+        # TODO: Change input form to allow choice on different chunks
+        # queue.put(data)
+        queue.put(data[0])
 
     def update_plots(self):
         # print("Updating plots")
