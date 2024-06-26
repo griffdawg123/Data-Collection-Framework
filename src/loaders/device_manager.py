@@ -15,6 +15,7 @@ class ConnectionMessenger(QObject):
     connected_signal = pyqtSignal(str, bool) # name of client, connection successful
     disconnected_signal = pyqtSignal(str) # name of client
     client_added = pyqtSignal(str) # name of client
+    client_removed = pyqtSignal(str) # name of client
 
 class DeviceManager(metaclass=Singleton):
 
@@ -28,12 +29,16 @@ class DeviceManager(metaclass=Singleton):
 
     def set_clients(self, clients):
         self.clients = clients
-        for name, client in self.clients.items():
-            self.connect_client(name, client)
+        for name in self.clients.keys():
+            self.connect_client(name)
 
     def add_client(self, name: str, client: BleakClient):
         self.clients[name] = client
-        self.connect_client(name, client)
+        self.connect_client(name)
+        self.messenger.client_added.emit(name)
+
+    def connect_to_add(self, func: Callable[[str], Any]):
+        self.messenger.client_added.connect(func)
 
     def get_clients(self):
         return self.clients
@@ -42,15 +47,19 @@ class DeviceManager(metaclass=Singleton):
         client = self.clients.get(name)
         self.disconnect_client(client)
         del self.clients[name]
+        self.messenger.client_removed.emit(name)
 
+    def connect_to_remove(self, func: Callable[[str], Any]):
+        self.messenger.client_removed.connect(func)
     # Names
     def get_client_names(self):
         return list(self.clients.keys())
 
     # Connection Management
 
-    def connect_client(self, name, client):
+    def connect_client(self, name):
         loop = get_event_loop()
+        client = self.clients[name]
         connection_task = loop.create_task(client.connect(), name=name)
         self.task_set.add(connection_task)
         connection_task.add_done_callback(self.task_set.discard)

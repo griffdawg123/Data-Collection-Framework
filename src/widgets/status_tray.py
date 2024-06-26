@@ -39,7 +39,7 @@ class StatusTray(QScrollArea):
     def load_all_devices(self):
         for label, client in self.dm.get_clients().items():
         # for label, client in self.clients.items():
-            status = BLEStatus(label, client, self.remove_device, parent=self)
+            status = BLEStatus(label, client, self.remove_device, self.retry_device, parent=self)
             status.resize(self.width(), status.height())
             self.statuses[label] = status
         
@@ -62,10 +62,13 @@ class StatusTray(QScrollArea):
     #     self.clients = clients
 
     def add_device(self, device_name, device):
-        new_status = BLEStatus(device_name, device, self.remove_device, parent=self)
+        new_status = BLEStatus(device_name, device, self.remove_device, self.retry_device, parent=self)
         self.statuses[device_name] = new_status
         self.vbox.insertWidget(self.vbox.count() -1 , new_status)
         self.set_layout_widget()
+
+    def retry_device(self, device_name):
+        self.dm.connect_client(device_name)
 
     def set_layout_widget(self):
         self.scroll_widget.setLayout(self.vbox)

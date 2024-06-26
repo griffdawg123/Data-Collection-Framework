@@ -11,9 +11,11 @@ from bleak import BleakClient
 
 from src.ble.static_generators import func_coro, param_cos, param_sin, sink_coro, source_coro
 from src.helpers import hex_to_rgb, parse_bytearray
+from src.loaders.device_manager import DeviceManager
 
 class Plots(pg.GraphicsLayoutWidget):
-    def __init__(self, config, clients):
+    # def __init__(self, config, clients):
+    def __init__(self, config):
         super().__init__(show=True, title=config.get("title", ""))
         self.funcs = {
             "sin" : param_sin,
@@ -21,7 +23,8 @@ class Plots(pg.GraphicsLayoutWidget):
             "fixed_point" : parse_bytearray,
         }
         self.config = config
-        self.clients = clients
+        # self.clients = clients
+        self.dm: DeviceManager = DeviceManager()
         self.data = []
         self.init_rows(config.get("rows", []))
         self.timer = QTimer()
@@ -72,9 +75,9 @@ class Plots(pg.GraphicsLayoutWidget):
             client: Optional[BleakClient] = None
             if source.get("type", "") == "ble":
                 args = source.get("args", {})
-                client = self.clients.get(args.get("name"), None)
+                # client = self.clients.get(args.get("name"), None)
+                client = self.dm.get_clients().get(args.get("name"), None)
                 print(args.get("name"))
-                print(self.clients)
                 assert(client)
                 loop = asyncio.get_event_loop()
                 notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))

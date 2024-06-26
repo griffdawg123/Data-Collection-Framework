@@ -1,4 +1,5 @@
 
+import asyncio
 from bleak import BleakClient
 from src.loaders.device_manager import DeviceManager
 

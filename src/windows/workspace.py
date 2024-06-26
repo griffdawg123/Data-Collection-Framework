@@ -85,7 +85,8 @@ class Workspace(QWidget):
         # Plot initialization
         self.plot_config = self.config.get("plots", {})
         # self.plots = Plots(self.plot_config, self.clients)
-        self.plots = Plots(self.plot_config, {})
+        # self.plots = Plots(self.plot_config, {})
+        self.plots = Plots(self.plot_config)
 
         # Layout setup
         self.workspace_layout: QHBoxLayout = QHBoxLayout()
@@ -169,18 +170,20 @@ class Workspace(QWidget):
 
     def edit_config(self):
         # config_dialog = GraphConfig(self.config.get("plots", {}), self.clients)
-        # config_dialog.hide()
-        # config = config_dialog.get_config()
-        # if not config:
-        #     return
-        # self.config["plots"] = config
-        # self.workspace_layout.removeWidget(self.plots)
-        # self.plots.stop()
-        # self.plots.close()
+        config_dialog = GraphConfig(self.config.get("plots", {}))
+        config_dialog.hide()
+        config = config_dialog.get_config()
+        if not config:
+            return
+        self.config["plots"] = config
+        self.workspace_layout.removeWidget(self.plots)
+        self.plots.stop()
+        self.plots.close()
         # self.plots = Plots(self.config["plots"], self.clients)
-        # self.workspace_layout.addWidget(self.plots)
-        # self.workspace_layout.setStretch(0, 1)
-        # self.workspace_layout.setStretch(1, 9)
+        self.plots = Plots(self.config["plots"])
+        self.workspace_layout.addWidget(self.plots)
+        self.workspace_layout.setStretch(0, 1)
+        self.workspace_layout.setStretch(1, 9)
         pass
 
     def play(self):
