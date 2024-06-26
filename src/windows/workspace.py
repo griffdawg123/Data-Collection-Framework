@@ -187,7 +187,7 @@ class Workspace(QWidget):
         pass
 
     def play(self):
-        self.plots.start()
+        self.plots.start_clicked()
 
     def pause(self):
         self.plots.stop()

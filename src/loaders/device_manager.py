@@ -1,4 +1,4 @@
-from asyncio import Task, get_event_loop
+from asyncio import Task, TaskGroup, get_event_loop
 from typing import Any, Callable, Dict, Self
 
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -16,6 +16,7 @@ class ConnectionMessenger(QObject):
     disconnected_signal = pyqtSignal(str) # name of client
     client_added = pyqtSignal(str) # name of client
     client_removed = pyqtSignal(str) # name of client
+    notify_tasks_complete = pyqtSignal(bool)
 
 class DeviceManager(metaclass=Singleton):
 
@@ -92,6 +93,19 @@ class DeviceManager(metaclass=Singleton):
     def on_disconnect(self, task: Task[bool]):
         self.messenger.disconnected_signal.emit(task.get_name())
 
+    # Notify tasks
+
+    def start_notify(self, task_set: set):
+        loop = get_event_loop()
+        tg_task = loop.create_task(self.await_notify_tasks(task_set))
+        tg_task.add_done_callback(lambda _: self.messenger.notify_tasks_complete.emit(True))
+
+    async def await_notify_tasks(self, task_set):
+        async with TaskGroup() as tg:
+            [tg.create_task(task) for task in task_set]
+
+    def connect_notify_done(self, func: Callable[[bool], Any]):
+        self.messenger.notify_tasks_complete.connect(func)
     '''
     On Setup:
         - Load clients into device manager

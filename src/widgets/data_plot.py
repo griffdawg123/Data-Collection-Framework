@@ -25,15 +25,18 @@ class Plots(pg.GraphicsLayoutWidget):
         self.config = config
         # self.clients = clients
         self.dm: DeviceManager = DeviceManager()
+        self.dm.connect_notify_done(self.start)
         self.data = []
         self.init_rows(config.get("rows", []))
         self.timer = QTimer()
         self.timer.setInterval(int(1000/config.get("data_rate", 60)))
         self.init_timers()
+        self.notify_tasks: set = set()
         # self.timer.start()
     
     def init_rows(self, plot_configs):
         for i, row in enumerate(plot_configs):
+            self.notify_tasks = set()
             self.data.append([])
             self.init_plots(row, i)
             self.nextRow()
@@ -74,14 +77,20 @@ class Plots(pg.GraphicsLayoutWidget):
 
             client: Optional[BleakClient] = None
             if source.get("type", "") == "ble":
+                '''
+                Add notify task to a task group/set to be deferred to device manager 
+                '''
                 args = source.get("args", {})
                 # client = self.clients.get(args.get("name"), None)
-                client = self.dm.get_clients().get(args.get("name"), None)
+                client = self.dm.get_clients()[args.get("name")]
                 print(args.get("name"))
                 assert(client)
-                loop = asyncio.get_event_loop()
-                notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
-                notify_task.add_done_callback(lambda _: print("notify started"))
+                # Add notify tasks to the task group
+                # self.notify_tasks.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
+                self.notify_tasks.add(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
+                # loop = asyncio.get_event_loop()
+                # notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
+                # notify_task.add_done_callback(lambda _: print("notify started"))
                 
 
             curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
@@ -139,7 +148,15 @@ class Plots(pg.GraphicsLayoutWidget):
     def stop(self):
         self.timer.stop()
 
-    def start(self):
+    def start_clicked(self):
+        self.dm.start_notify(self.notify_tasks)
+
+    def start(self, _):
+        '''
+        Start clicked sends a signal to the device manager to try to start 
+        notify for all of the needed devices/characteristics
+        When all are done - start timer.
+        '''
         print("start")
         self.timer.start()
 
@@ -218,6 +235,6 @@ if __name__ == "__main__":
 # }
 
     app = QApplication(sys.argv)
-    plots = Plots(config, {})
+    plots = Plots(config)
     plots.start()
     sys.exit(app.exec())
