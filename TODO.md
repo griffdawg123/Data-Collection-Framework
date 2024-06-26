@@ -2,20 +2,20 @@
 ## Done
 - [x] Graph wrapper with title, axis labels, remove, edit buttons
 - [x] add New plot button to control buttons
-- [ ] Individual plot widget - Implement with coroutine method & new bit parsing
-- [ ] Rewrite Data Collection using coroutines
+- [x] Individual plot widget - Implement with coroutine method & new bit parsing
+- [x] Rewrite Data Collection using coroutines
 - [x] Graph Displaying
-- [ ] Allow for in application rewriting of plot config 
-- [ ] Construct rewriting plot config editing from input config
-- [ ] Implement characteristic scanning for BLE devices
-- [ ] Add start stop controls
-- [ ] Reimplement restart function
+- [x] Allow for in application rewriting of plot config 
+- [x] Construct rewriting plot config editing from input config
+- [x] Implement characteristic scanning for BLE devices
+- [x] Add start stop controls
+- [x] Reimplement restart function
+- [x] Implemented Device manager - Better handling and signals
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
 ## Backlog
 - [ ] Change Source form to allow for choice of which Bytearray chunk to be used
 - [ ] Start notify jobs when start is clicked so the actual start of the graph is after all successful
-- [ ] Add threadsafe queue in source coroutine
 - [ ] Make it so that By default, args is shown as BLE source is also the default
 - [ ] JSON Schema implementation for validation
 ## Major Features (To Be Split into Tasks)
