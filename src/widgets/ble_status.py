@@ -7,6 +7,7 @@ from bleak import BleakClient
 
 from src.ble import ble_scanner
 from src.loaders.config_loader import ConfigLoader
+from src.loaders.device_manager import DeviceManager
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
@@ -17,7 +18,7 @@ class BLEStatus(QWidget):
         self.client = device
         self.address = self.client.address
         self.title_label = QLabel(self.label)
-        self.current_status = LEDColor.IDLE
+        self.current_status = LEDColor.OKAY if self.client.is_connected else LEDColor.IDLE
         self.stat_led = LEDIndicator(self.current_status)
         self.stat_label = QLabel(self.current_status.name)
         self.retry = QPushButton()
@@ -25,7 +26,7 @@ class BLEStatus(QWidget):
         self.remove_device = QPushButton("Remove")
         self.remove_device.clicked.connect(lambda _ : remove_func(self.label))
         self.init_ui()
-        self.init_ble()
+        # self.init_ble()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -54,6 +55,10 @@ class BLEStatus(QWidget):
         connect_task = event_loop.create_task(self.client.connect())
         connect_task.add_done_callback(self.set_status)
         # when device connects, we want to update its config file with services
+
+    def set_connected(self, connected: bool):
+        self.current_status = LEDColor.OKAY if connected else LEDColor.ERROR
+        self.update()
 
     def set_status(self, task: asyncio.Task):
         exp = task.exception()
