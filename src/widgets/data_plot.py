@@ -1,11 +1,11 @@
 import functools
-from typing import Optional
+from typing import Dict, List, Optional
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 from queue import Queue
 import pyqtgraph as pg
 import sys
-import asyncio
+from asyncio import TaskGroup
 from qasync import QEventLoop
 from bleak import BleakClient
 
@@ -26,17 +26,16 @@ class Plots(pg.GraphicsLayoutWidget):
         # self.clients = clients
         self.dm: DeviceManager = DeviceManager()
         self.dm.connect_notify_done(self.start)
+        self.notify_tasks: List = []
         self.data = []
         self.init_rows(config.get("rows", []))
         self.timer = QTimer()
         self.timer.setInterval(int(1000/config.get("data_rate", 60)))
         self.init_timers()
-        self.notify_tasks: set = set()
         # self.timer.start()
     
     def init_rows(self, plot_configs):
         for i, row in enumerate(plot_configs):
-            self.notify_tasks = set()
             self.data.append([])
             self.init_plots(row, i)
             self.nextRow()
@@ -87,10 +86,16 @@ class Plots(pg.GraphicsLayoutWidget):
                 assert(client)
                 # Add notify tasks to the task group
                 # self.notify_tasks.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
-                self.notify_tasks.add(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
+                self.notify_tasks.append({"UUID": args.get("UUID"), "client": client, "source": data_source})
+                # self.notify_tasks.add(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
                 # loop = asyncio.get_event_loop()
                 # notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
                 # notify_task.add_done_callback(lambda _: print("notify started"))
+
+                '''
+                INSTEAD! save a reference to the source coroutine, the device name and the characteristic UUID
+                Pass that to device manager and call notify there.
+                '''
                 
 
             curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
@@ -149,15 +154,16 @@ class Plots(pg.GraphicsLayoutWidget):
         self.timer.stop()
 
     def start_clicked(self):
+        print(f"Notify Tasks: {self.notify_tasks}")
         self.dm.start_notify(self.notify_tasks)
 
-    def start(self, _):
+    def start(self, okay: bool):
         '''
         Start clicked sends a signal to the device manager to try to start 
         notify for all of the needed devices/characteristics
         When all are done - start timer.
         '''
-        print("start")
+        print(f"start {okay}")
         self.timer.start()
 
 if __name__ == "__main__":
