@@ -14,9 +14,10 @@
 - [x] Start notify jobs when start is clicked so the actual start of the graph is after all successful
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
+- [ ] Ensure that if Existing config is ble, show source/characteristic combobox
+- [ ] Ensure if Fixed point is chosen, the chunk chooser is shown
 ## Backlog
 - [ ] Ensure only my logging is used
-- [ ] Test notifications with multiple characteristics
 - [ ] Add disconnected callback to show in status tray
 - [ ] Change Source form to allow for choice of which Bytearray chunk to be used
 - [ ] Make it so that By default, args is shown as BLE source is also the default

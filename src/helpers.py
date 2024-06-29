@@ -1,3 +1,4 @@
+import struct
 from math import log
 from typing import Dict, List, Optional
 from PyQt6.QtWidgets import QWidget
@@ -34,32 +35,33 @@ def format_config_name(string: str) -> str:
 def get_files(dir: str) -> list[str]:
     return next(walk(dir), (None, None, []))[2]
 
+
+def to_value(format_string: str, remainder_array: List[int], data: bytearray) -> List[float]:
+    assert len(format_string) == len(remainder_array)
+    res = []
+    for i, val in enumerate(struct.unpack(format_string, data)):
+         res.append(val/(2**remainder_array[i]))
+    return res
+
+def get_format_string(lengths, signeds):
+    FORMATS = {
+        1 : "b",
+        2 : "h",
+        4 : "i",
+        8 : "q",
+            }
+    assert len(lengths) == len(signeds)
+    return "".join([FORMATS[lengths[i]] if signeds[i] else FORMATS[lengths[i]].upper() for i in range(len(lengths))])
+
 def parse_bytearray(chunks_config: Optional[Dict], bytes: bytearray) -> List[float]:
-    # need to be able to check for variable number of chunks of various encoding and lengths
-    # tuples - length and remainder bits
-    # (len (in bits), sign, remainders (in bits))
-    print(bytes, bytearray(0))
-    if not chunks_config: chunks = [{"length": len(bytes)*8, "signed": True, "remainder":0}]
-    else:
-        chunks = chunks_config["chunks"]
+    chunks = chunks_config["chunks"] if chunks_config else [{"length": len(bytes), "signed": True, "remainder":0}]
     if not bytes: return [0]*len(chunks)
     total_len = len(bytes)
-    assert total_len*8 == sum([c["length"] for c in chunks])
-    # if m and n: assert log(m+n, 2) == num_bytes
-    res = []
-    # for l, sign, rem in itemgetter("length", "signed", "remainder")(chunks):
-    print(chunks)
-    for chunk in chunks:
-        l = chunk["length"]
-        sign = chunk["signed"]
-        rem = chunk["remainder"]
-        print(l, sign, rem)
-        assert log(l, 2).is_integer()
-        signed_flag = "i" if sign else "u"
-        dt = np.dtype(f"{signed_flag}{int(l/8)}")
-        val = float(np.frombuffer(bytes, dtype=dt)[0])/(2**rem)
-        res.append(val)
-    return res
+    assert total_len == sum([c["length"] for c in chunks])
+    lengths = [chunk["length"] for chunk in chunks]
+    signeds = [chunk["signed"] for chunk in chunks]
+    remainders = [chunk["remainder"] for chunk in chunks]
+    return to_value(get_format_string(lengths, signeds), remainders, bytes)
 
 def hex_to_rgb(hex):
     if hex == "":
