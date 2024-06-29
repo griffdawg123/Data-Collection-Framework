@@ -1,16 +1,13 @@
 import logging
-from typing import Dict
 from PyQt6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QFileDialog
 )
 import json
-import asyncio
-
 from bleak import BleakClient
-
 from qasync import asyncClose
+
 from src import helpers
 from src.loaders.config_loader import ConfigLoader
 from src.loaders.device_manager import DeviceManager
@@ -29,7 +26,6 @@ class Workspace(QWidget):
         # initialise values
         self.config_path: str = ""
         self.tasks = set()
-        # self.clients: Dict[str, BleakClient] = {}
         self.dm: DeviceManager = DeviceManager()
 
         # logger stup
@@ -59,13 +55,8 @@ class Workspace(QWidget):
         self.showMaximized()
 
     def load_devices_from_config(self):
-        # self.clients = self.config_manager.load_devices()
         self.dm.set_clients(self.config_manager.load_devices())
         self.config["devices"] = [helpers.format_config_name(name) for name in self.dm.get_client_names()]
-        # self.config["devices"] = [
-        #         helpers.format_config_name(device_name)
-        #         for device_name in self.clients.keys()
-        #         ]
 
     # initialises UI
     def load_UI(self) -> None:
@@ -77,15 +68,12 @@ class Workspace(QWidget):
             self.load_device,
             self.restart,
             self.edit_config,
-            # self.clients,
             self.play,
             self.pause,
         )
         
         # Plot initialization
         self.plot_config = self.config.get("plots", {})
-        # self.plots = Plots(self.plot_config, self.clients)
-        # self.plots = Plots(self.plot_config, {})
         self.plots = Plots(self.plot_config)
 
         # Layout setup
@@ -101,7 +89,6 @@ class Workspace(QWidget):
 
     def add_device(self, conf):
         client = BleakClient(conf["address"])
-        # self.clients[conf["name"]] = client
         self.dm.add_client(conf["name"], client)
         self.add_device_to_conf(conf["name"])
         self.sidebar.add_client(conf["name"], client)
@@ -154,14 +141,6 @@ class Workspace(QWidget):
 
     # remove device from config dict and dict
     def remove_device(self, device_name):
-        # loop = asyncio.get_event_loop()
-        # disconnect_task = loop.create_task(
-        #     self.clients[device_name].disconnect()
-        # )
-        # self.tasks.add(disconnect_task)
-        # disconnect_task.add_done_callback(self.tasks.discard)
-        # del self.clients[device_name]
-        # self.remove_device_from_conf(device_name)
         self.dm.remove_client(device_name)
         self.logger.info(f"Removing device {device_name}")
 
@@ -169,7 +148,6 @@ class Workspace(QWidget):
         self.plots.restart()
 
     def edit_config(self):
-        # config_dialog = GraphConfig(self.config.get("plots", {}), self.clients)
         config_dialog = GraphConfig(self.config.get("plots", {}))
         config_dialog.hide()
         config = config_dialog.get_config()
@@ -179,12 +157,10 @@ class Workspace(QWidget):
         self.workspace_layout.removeWidget(self.plots)
         self.plots.stop()
         self.plots.close()
-        # self.plots = Plots(self.config["plots"], self.clients)
         self.plots = Plots(self.config["plots"])
         self.workspace_layout.addWidget(self.plots)
         self.workspace_layout.setStretch(0, 1)
         self.workspace_layout.setStretch(1, 9)
-        pass
 
     def play(self):
         self.plots.start_clicked()
@@ -194,8 +170,6 @@ class Workspace(QWidget):
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")
-        # for client in self.clients.values():
-        #     await client.disconnect()
         await self.dm.disconnect_all()
 
     @asyncClose

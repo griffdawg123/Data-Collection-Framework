@@ -14,7 +14,6 @@ from src.helpers import hex_to_rgb, parse_bytearray
 from src.loaders.device_manager import DeviceManager
 
 class Plots(pg.GraphicsLayoutWidget):
-    # def __init__(self, config, clients):
     def __init__(self, config):
         super().__init__(show=True, title=config.get("title", ""))
         self.funcs = {
@@ -23,16 +22,14 @@ class Plots(pg.GraphicsLayoutWidget):
             "fixed_point" : parse_bytearray,
         }
         self.config = config
-        # self.clients = clients
         self.dm: DeviceManager = DeviceManager()
-        self.dm.connect_notify_done(self.start)
+        self.dm.connect_notify_done(self.timer_control)
         self.notify_tasks: List = []
         self.data = []
         self.init_rows(config.get("rows", []))
         self.timer = QTimer()
         self.timer.setInterval(int(1000/config.get("data_rate", 60)))
         self.init_timers()
-        # self.timer.start()
     
     def init_rows(self, plot_configs):
         for i, row in enumerate(plot_configs):
@@ -54,10 +51,6 @@ class Plots(pg.GraphicsLayoutWidget):
 
     def init_sources(self, plot: pg.PlotItem, sources, datapoints, i, j):
         for k, source in enumerate(sources):
-            # need to create a coroutine for source (BLE Notify, BLE Read and Time)
-            # need to create a coroutine for function (Sin, Cos, Parsing, Identity, etc)
-            # need to create a couroutine for updating 
-            # ith row, jth plot, kth source
             queue = Queue(maxsize=datapoints)
             [ queue.put(0) for _ in range(datapoints) ]
             sink = sink_coro(functools.partial(self.update_data, i, j, k))
@@ -76,27 +69,11 @@ class Plots(pg.GraphicsLayoutWidget):
 
             client: Optional[BleakClient] = None
             if source.get("type", "") == "ble":
-                '''
-                Add notify task to a task group/set to be deferred to device manager 
-                '''
                 args = source.get("args", {})
-                # client = self.clients.get(args.get("name"), None)
                 client = self.dm.get_clients()[args.get("name")]
                 print(args.get("name"))
                 assert(client)
-                # Add notify tasks to the task group
-                # self.notify_tasks.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
                 self.notify_tasks.append({"UUID": args.get("UUID"), "client": client, "source": data_source})
-                # self.notify_tasks.add(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
-                # loop = asyncio.get_event_loop()
-                # notify_task = loop.create_task(client.start_notify(args.get("UUID"), lambda _, data: data_source.send(data)))
-                # notify_task.add_done_callback(lambda _: print("notify started"))
-
-                '''
-                INSTEAD! save a reference to the source coroutine, the device name and the characteristic UUID
-                Pass that to device manager and call notify there.
-                '''
-                
 
             curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
             curve.setData(queue.queue)
@@ -117,11 +94,9 @@ class Plots(pg.GraphicsLayoutWidget):
         queue: Queue = self.data[i][j][k].get("data")
         queue.get()
         # TODO: Change input form to allow choice on different chunks
-        # queue.put(data)
         queue.put(data[0])
 
     def update_plots(self):
-        # print("Updating plots")
         for row in self.data:
             for plot in row:
                 for source in plot:
@@ -149,22 +124,25 @@ class Plots(pg.GraphicsLayoutWidget):
                     queue = Queue(maxsize=datapoints)
                     [ queue.put(0) for _ in range(datapoints) ]
                     source["data"] = queue
+        self.update_plots()
 
     def stop(self):
-        self.timer.stop()
+        self.dm.stop_notify()
 
     def start_clicked(self):
         print(f"Notify Tasks: {self.notify_tasks}")
         self.dm.start_notify(self.notify_tasks)
 
-    def start(self, okay: bool):
+    def timer_control(self, start: bool):
         '''
         Start clicked sends a signal to the device manager to try to start 
         notify for all of the needed devices/characteristics
         When all are done - start timer.
         '''
-        print(f"start {okay}")
-        self.timer.start()
+        if start:
+            self.timer.start()
+        else:
+            self.timer.stop()
 
 if __name__ == "__main__":
     config = {
@@ -242,5 +220,5 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
     plots = Plots(config)
-    plots.start()
+    plots.timer_control()
     sys.exit(app.exec())

@@ -11,13 +11,18 @@
 - [x] Add start stop controls
 - [x] Reimplement restart function
 - [x] Implemented Device manager - Better handling and signals
+- [x] Start notify jobs when start is clicked so the actual start of the graph is after all successful
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
 ## Backlog
+- [ ] Ensure only my logging is used
+- [ ] Test notifications with multiple characteristics
+- [ ] Add disconnected callback to show in status tray
 - [ ] Change Source form to allow for choice of which Bytearray chunk to be used
-- [ ] Start notify jobs when start is clicked so the actual start of the graph is after all successful
 - [ ] Make it so that By default, args is shown as BLE source is also the default
 - [ ] JSON Schema implementation for validation
+- [ ] Graph form needs to fully reform itself correctly - So that it resaves correctly
+- [ ] Why aren't multiple notify characteristics working?
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs
 - [ ] Data Saving

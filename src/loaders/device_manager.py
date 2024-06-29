@@ -1,5 +1,5 @@
 from asyncio import Task, TaskGroup, get_event_loop
-from typing import Any, Callable, Dict, Generator, List, Self
+from typing import Any, Callable, Generator, List
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from bleak import BleakClient
@@ -25,6 +25,7 @@ class DeviceManager(metaclass=Singleton):
         self.set_clients(clients)
         self.task_set = set()
         self.messenger = ConnectionMessenger()
+        self.current_notify_tasks = []
 
     # Client Dict management
 
@@ -96,11 +97,12 @@ class DeviceManager(metaclass=Singleton):
     # Notify tasks
 
     def start_notify(self, task_set: List):
+        self.current_notify_tasks = task_set
         loop = get_event_loop()
-        tg_task = loop.create_task(self.await_notify_tasks(task_set))
+        tg_task = loop.create_task(self.await_start_notify_tasks(task_set))
         tg_task.add_done_callback(lambda _: self.messenger.notify_tasks_complete.emit(True))
 
-    async def await_notify_tasks(self, task_set: List):
+    async def await_start_notify_tasks(self, task_set: List):
         async with TaskGroup() as tg:
             for task in task_set:
                 client: BleakClient = task["client"]
@@ -110,6 +112,20 @@ class DeviceManager(metaclass=Singleton):
 
     def connect_notify_done(self, func: Callable[[bool], Any]):
         self.messenger.notify_tasks_complete.connect(func)
+
+    def stop_notify(self):
+        loop = get_event_loop()
+        tg_task = loop.create_task(self.await_stop_notify_tasks())
+        tg_task.add_done_callback(lambda _: self.messenger.notify_tasks_complete.emit(False))
+
+
+    async def await_stop_notify_tasks(self):
+        async with TaskGroup() as tg:
+            for task in self.current_notify_tasks:
+                client: BleakClient = task["client"]
+                UUID: str = task["UUID"]
+                tg.create_task(client.stop_notify(UUID))
+
     '''
     On Setup:
         - Load clients into device manager
