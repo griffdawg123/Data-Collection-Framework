@@ -25,25 +25,29 @@ class Sidebar(QWidget):
         self.status_tray: StatusTray = StatusTray(remove_func)
         self.device_buttons: DeviceButtons = DeviceButtons(new_device, load_device, restart, edit_config)
         self.control_buttons = ControlButtons()
-        self.set_params(title, remove_func, new_device, load_device, restart, edit_config, {}, play, pause)
+        # self.set_params(title, remove_func, new_device, load_device, restart, edit_config, {}, play, pause)
+        self.set_params(title, remove_func, new_device, load_device, restart, edit_config, play, pause)
         self.init_UI()
 
-    def set_params(self, title, remove, new, load, restart, edit_config, clients, play, pause):
+    # def set_params(self, title, remove, new, load, restart, edit_config, clients, play, pause):
+    def set_params(self, title, remove, new, load, restart, edit_config, play, pause):
         print(title)
         self.header_text.setText(title)
         self.header_text.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.status_tray.set_remove_func(remove)
         self.device_buttons.set_funcs(new, load, restart, edit_config)
         self.control_buttons.connect_funcs(play, pause)
-        self.set_clients(clients)
+        # redraw status_tray/
+        # self.set_clients(clients)
+        self.status_tray.set_clients()
         self.update()
 
-    def set_clients(self, clients):
-        self.clients = clients
-        self.status_tray.set_clients(clients)
+    # def set_clients(self, clients):
+    #     self.clients = clients
+    #     self.status_tray.set_clients(clients)
 
     def add_client(self, name, client):
-        self.clients[name] = client
+        # self.clients[name] = client
         self.status_tray.add_device(name, client)
 
     def init_UI(self):

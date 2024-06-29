@@ -7,25 +7,27 @@ from bleak import BleakClient
 
 from src.ble import ble_scanner
 from src.loaders.config_loader import ConfigLoader
+from src.loaders.device_manager import DeviceManager
 from src.widgets.led_indicator import LEDColor, LEDIndicator
 
 class BLEStatus(QWidget):
 
-    def __init__(self, device_label: str, device: BleakClient, remove_func, parent=None) -> None:
+    def __init__(self, device_label: str, device: BleakClient, remove_func, retry_func, parent=None) -> None:
         super().__init__(parent)
         self.label = device_label
         self.client = device
         self.address = self.client.address
         self.title_label = QLabel(self.label)
-        self.current_status = LEDColor.IDLE
+        self.current_status = LEDColor.OKAY if self.client.is_connected else LEDColor.IDLE
         self.stat_led = LEDIndicator(self.current_status)
         self.stat_label = QLabel(self.current_status.name)
         self.retry = QPushButton()
+        self.retry_func = retry_func
         self.address_label = QLabel(self.address)
         self.remove_device = QPushButton("Remove")
         self.remove_device.clicked.connect(lambda _ : remove_func(self.label))
         self.init_ui()
-        self.init_ble()
+        # self.init_ble()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -40,38 +42,25 @@ class BLEStatus(QWidget):
         self.indicator_widget.setLayout(indicator_layout)
         layout.addWidget(self.indicator_widget)
         self.retry.setText("Retry")
-        self.retry.clicked.connect(self.init_ble)
+        self.retry.clicked.connect(self.retry_connect)
         layout.addWidget(self.retry)
         layout.addWidget(self.remove_device)
 
         self.setLayout(layout)
         self.setStyleSheet("border: 1px solid black;")
 
-    def init_ble(self):
-        self.current_status = LEDColor.IDLE
-        self.update()
-        event_loop = asyncio.get_event_loop()
-        connect_task = event_loop.create_task(self.client.connect())
-        connect_task.add_done_callback(self.set_status)
-        # when device connects, we want to update its config file with services
-
-    def set_status(self, task: asyncio.Task):
-        exp = task.exception()
-        if exp:
-            print(exp)
-            self.current_status = LEDColor.ERROR
-        elif self.client.is_connected:
-            print(f"Connected to device: {self.client.address}")
-            self.current_status = LEDColor.OKAY
-        else:
-            print("Retry")
-            self.current_status = LEDColor.IDLE
+    def set_connected(self, connected: bool):
+        self.current_status = LEDColor.OKAY if connected else LEDColor.ERROR
         self.update()
 
     def update(self): # pyright: ignore[reportIncompatibleMethodOverride]
         self.stat_label.setText(self.current_status.name)
         self.stat_led.set_status(self.current_status)
         super().update()
+
+    def retry_connect(self):
+        self.current_status = LEDColor.IDLE
+        self.retry_func(self.label)
 
     async def disconnect(self): # pyright: ignore[reportIncompatibleMethodOverride]
         await self.client.disconnect()

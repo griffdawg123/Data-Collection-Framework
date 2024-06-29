@@ -1,18 +1,16 @@
 import logging
-from typing import Dict
 from PyQt6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QFileDialog
 )
 import json
-import asyncio
-
 from bleak import BleakClient
-
 from qasync import asyncClose
+
 from src import helpers
 from src.loaders.config_loader import ConfigLoader
+from src.loaders.device_manager import DeviceManager
 from src.widgets.data_plot import Plots
 from src.widgets.sidebar import Sidebar
 from src.widgets.graph_config import GraphConfig
@@ -28,7 +26,7 @@ class Workspace(QWidget):
         # initialise values
         self.config_path: str = ""
         self.tasks = set()
-        self.clients: Dict[str, BleakClient] = {}
+        self.dm: DeviceManager = DeviceManager()
 
         # logger stup
         self.logger = logging.getLogger(log_level.value)
@@ -41,31 +39,27 @@ class Workspace(QWidget):
 
         # setup inner widgets
         self.sidebar = Sidebar()
-        # self.config_dialog = GraphConfig(self.config.get("plots", {}))
-        # self.config_dialog.hide()
-
         self.config_window: ConfigSelection = ConfigSelection(
             self.logger,
-            self.create_config_manager
+            self.load_config
         )
         self.config_window.show()
         self.hide()
     
-    # creates conflict manager
-    def create_config_manager(self, config_path: str) -> None:
+    # creates config manager
+    def load_config(self, config_path: str) -> None:
         self.config_manager = ConfigLoader(config_path, self.logger)
         self.config = self.config_manager.load_config()
+        self.load_devices_from_config()
         self.load_UI()
         self.showMaximized()
 
+    def load_devices_from_config(self):
+        self.dm.set_clients(self.config_manager.load_devices())
+        self.config["devices"] = [helpers.format_config_name(name) for name in self.dm.get_client_names()]
+
     # initialises UI
     def load_UI(self) -> None:
-        self.clients = self.config_manager.load_devices()
-        self.config["devices"] = [
-            helpers.format_config_name(device_name)
-            for device_name in self.clients.keys()
-        ]
-
         # Sidebar initialisation
         self.sidebar.set_params(
             self.config_manager.get_title(),
@@ -74,14 +68,13 @@ class Workspace(QWidget):
             self.load_device,
             self.restart,
             self.edit_config,
-            self.clients,
             self.play,
             self.pause,
         )
         
         # Plot initialization
         self.plot_config = self.config.get("plots", {})
-        self.plots = Plots(self.plot_config, self.clients)
+        self.plots = Plots(self.plot_config)
 
         # Layout setup
         self.workspace_layout: QHBoxLayout = QHBoxLayout()
@@ -96,10 +89,9 @@ class Workspace(QWidget):
 
     def add_device(self, conf):
         client = BleakClient(conf["address"])
-        self.clients[conf["name"]] = client
+        self.dm.add_client(conf["name"], client)
         self.add_device_to_conf(conf["name"])
         self.sidebar.add_client(conf["name"], client)
-        self.plot_config
 
     def add_device_to_conf(self, device_name):
         devices = self.config["devices"]
@@ -149,21 +141,14 @@ class Workspace(QWidget):
 
     # remove device from config dict and dict
     def remove_device(self, device_name):
-        loop = asyncio.get_event_loop()
-        disconnect_task = loop.create_task(
-            self.clients[device_name].disconnect()
-        )
-        self.tasks.add(disconnect_task)
-        disconnect_task.add_done_callback(self.tasks.discard)
-        del self.clients[device_name]
-        self.remove_device_from_conf(device_name)
+        self.dm.remove_client(device_name)
         self.logger.info(f"Removing device {device_name}")
 
     def restart(self):
         self.plots.restart()
 
     def edit_config(self):
-        config_dialog = GraphConfig(self.config.get("plots", {}), self.clients)
+        config_dialog = GraphConfig(self.config.get("plots", {}))
         config_dialog.hide()
         config = config_dialog.get_config()
         if not config:
@@ -172,21 +157,20 @@ class Workspace(QWidget):
         self.workspace_layout.removeWidget(self.plots)
         self.plots.stop()
         self.plots.close()
-        self.plots = Plots(self.config["plots"], self.clients)
+        self.plots = Plots(self.config["plots"])
         self.workspace_layout.addWidget(self.plots)
         self.workspace_layout.setStretch(0, 1)
         self.workspace_layout.setStretch(1, 9)
 
     def play(self):
-        self.plots.start()
+        self.plots.start_clicked()
 
     def pause(self):
         self.plots.stop()
 
     async def disconnect_from_clients(self):
         self.logger.info(f"Disconnecting from all clients")
-        for client in self.clients.values():
-            await client.disconnect()
+        await self.dm.disconnect_all()
 
     @asyncClose
     async def closeEvent(self, _) -> None: # pyright: ignore[reportIncompatibleMethodOverride]
