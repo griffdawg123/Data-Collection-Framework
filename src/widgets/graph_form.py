@@ -370,6 +370,7 @@ class QFixedPointForm(ParamForm):
         super().__init__()
         self.which_chunk = QSpinBox()
         self.which_chunk.setMinimum(0)
+        self.which_chunk.setMaximum(0)
         self.add_chunk_button = QPushButton("Add Chunk")
         self.remove_chunk_button = QPushButton("Remove Chunk")
 
@@ -405,7 +406,7 @@ class QFixedPointForm(ParamForm):
                 "chunks" : [ c.get_config() for c in self.chunks ]
         }
 
-    def add_chunk(self, chunk: Dict = {}):
+    def add_chunk(self, _=False, chunk: Dict = {}):
         print("Chunk: ", chunk)
         new_chunk = QFixedPointChunk(chunk)
         self.vbox.insertWidget(len(self.chunks), new_chunk)

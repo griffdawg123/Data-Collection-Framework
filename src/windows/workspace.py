@@ -98,6 +98,7 @@ class Workspace(QWidget):
         devices = self.config["devices"]
         devices.append(helpers.format_config_name(device_name))
         self.config["devices"] = devices
+        self.config_manager.save_config(self.config)
 
     def remove_device_from_conf(self, device_name):
         devices = self.config["devices"]

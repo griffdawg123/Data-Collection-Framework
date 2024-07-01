@@ -18,14 +18,15 @@
 - [ ] Add disconnected callback to show in status tray
 - [ ] Graph form needs to fully reform itself correctly - So that it resaves correctly
 - [ ] Why aren't multiple notify characteristics working?
+- [ ] Change Source form to allow for choice of which Bytearray chunk to be used
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
-- [ ] Change Source form to allow for choice of which Bytearray chunk to be used
-    - Spin box bounded by the number of chunks created in BLE Args Source
-    - add that to data structure in plot
+- [ ] Share sources across graphs
+    - Specify sources and its parse method (float or fixed point)
+    - As they're added, we can choose these as the source along with the required chunk
+    - This is passed to the source generator
 ## Backlog
 - [ ] Ensure only my logging is used
-- [ ] Share sources across graphs
 - [ ] JSON Schema implementation for validation
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs
