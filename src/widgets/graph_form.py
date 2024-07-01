@@ -1,8 +1,7 @@
 from abc import abstractmethod
-from enum import Enum, IntEnum
-import functools
+from enum import IntEnum
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
         QButtonGroup,
@@ -12,7 +11,6 @@ from PyQt6.QtWidgets import (
         QDoubleSpinBox,
         QFormLayout,
         QHBoxLayout,
-        QInputDialog,
         QLabel,
         QLineEdit,
         QPushButton,
@@ -186,7 +184,7 @@ class SourceForm(QWidget):
         self.pen_color_input.setText(color.name())
 
 class BLESourceArgsForm(QWidget):
-    def __init__(self, config = {}, clients = {}) -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
         self.config = config
         self.dm: DeviceManager = DeviceManager()
@@ -370,6 +368,8 @@ class TrigForm(ParamForm):
 class QFixedPointForm(ParamForm):
     def __init__(self) -> None:
         super().__init__()
+        self.which_chunk = QSpinBox()
+        self.which_chunk.setMinimum(0)
         self.add_chunk_button = QPushButton("Add Chunk")
         self.remove_chunk_button = QPushButton("Remove Chunk")
 
@@ -381,6 +381,14 @@ class QFixedPointForm(ParamForm):
 
     def init_UI(self):
         self.vbox = QVBoxLayout()
+
+        which_chunk = QWidget()
+        which_chunk_layout = QHBoxLayout()
+        which_chunk_label = QLabel("Which Chunk: ")
+        which_chunk_layout.addWidget(which_chunk_label)
+        which_chunk_layout.addWidget(self.which_chunk)
+        which_chunk.setLayout(which_chunk_layout)
+        self.vbox.addWidget(which_chunk)
         
         buttons = QWidget()
         buttons_layout = QHBoxLayout()
@@ -392,13 +400,17 @@ class QFixedPointForm(ParamForm):
         self.setLayout(self.vbox)
 
     def get_config(self):
-        return {"chunks" : [ c.get_config() for c in self.chunks ]}
+        return {
+                "chunk" : self.which_chunk.value(),
+                "chunks" : [ c.get_config() for c in self.chunks ]
+        }
 
-    def add_chunk(self, checked = False, chunk: Dict = {}):
+    def add_chunk(self, chunk: Dict = {}):
         print("Chunk: ", chunk)
         new_chunk = QFixedPointChunk(chunk)
         self.vbox.insertWidget(len(self.chunks), new_chunk)
         self.chunks.append(new_chunk)
+        self.which_chunk.setMaximum(len(self.chunks)-1)
 
     def remove_chunk(self):
         if len(self.chunks) == 0:
@@ -406,8 +418,10 @@ class QFixedPointForm(ParamForm):
         to_remove = self.chunks.pop()
         self.vbox.removeWidget(to_remove)
         self.updateGeometry()
+        self.which_chunk.setMaximum(len(self.chunks)-1)
 
     def set_values(self, config):
+        self.which_chunk.setValue(config.get("chunk", 0))
         for chunk in config.get("chunks", []):
             self.add_chunk(chunk=chunk)
 
@@ -422,7 +436,7 @@ class QFixedPointChunk(ParamForm):
         self.remainder.setRange(0, 512*8)
         self.remainder.setValue(chunk.get("remainder", 0))
         self.signed = QCheckBox()
-        self.signed.setChecked(chunk.get("checked", False))
+        self.signed.setChecked(chunk.get("signed", False))
         self.init_UI()
 
     def init_UI(self):

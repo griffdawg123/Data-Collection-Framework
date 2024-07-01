@@ -31,6 +31,6 @@ def test_different_lengths_and_signs():
 
 # === Parser ===
 def test_single_value():
-    config = {"chunks": [{"length": 4, "remainder": 16, "signed": True}]}
+    config = {"chunks": [{"length": 4, "remainder": 16, "signed": True}], "chunk": 0}
     data = bytearray(b'\x85X\x06\x01')
-    assert parse_bytearray(config, data) == [262.3457794189453]
+    assert parse_bytearray(config, data) == 262.3457794189453

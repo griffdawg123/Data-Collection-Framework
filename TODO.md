@@ -20,9 +20,11 @@
 - [ ] Why aren't multiple notify characteristics working?
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
+- [ ] Change Source form to allow for choice of which Bytearray chunk to be used
+    - Spin box bounded by the number of chunks created in BLE Args Source
+    - add that to data structure in plot
 ## Backlog
 - [ ] Ensure only my logging is used
-- [ ] Change Source form to allow for choice of which Bytearray chunk to be used
 - [ ] Share sources across graphs
 - [ ] JSON Schema implementation for validation
 ## Major Features (To Be Split into Tasks)

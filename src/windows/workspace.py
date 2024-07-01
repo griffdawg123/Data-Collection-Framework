@@ -57,6 +57,7 @@ class Workspace(QWidget):
     def load_devices_from_config(self):
         self.dm.set_clients(self.config_manager.load_devices())
         self.config["devices"] = [helpers.format_config_name(name) for name in self.dm.get_client_names()]
+        print(self.config["devices"])
 
     # initialises UI
     def load_UI(self) -> None:

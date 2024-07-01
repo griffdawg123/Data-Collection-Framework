@@ -77,6 +77,7 @@ class Plots(pg.GraphicsLayoutWidget):
             color = source.get("pen_color", "FFFFFF") 
             curve = plot.plot(pen=hex_to_rgb(color))
             curve.setData(queue.queue)
+
             
             source_info = {
                 "data" : queue,
@@ -95,14 +96,9 @@ class Plots(pg.GraphicsLayoutWidget):
         queue: Queue = self.data[i][j][k].get("data")
         queue.get()
         # TODO: Change input form to allow choice on different chunks
-        queue.put(data[0])
+        queue.put(data)
 
     def update_plots(self):
-        # for row in self.data:
-        #     for plot in row:
-        #         for source in plot:
-
-        #             source["curve"].setData(source["data"].queue)
         for i, row in enumerate(self.data):
             for j, plot_confs in enumerate(row):
                 plot: pg.PlotItem = self.getItem(i, j)

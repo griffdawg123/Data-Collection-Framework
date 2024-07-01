@@ -33,10 +33,8 @@ class StatusTray(QScrollArea):
 
     def load_all_devices(self):
         for label, client in self.dm.get_clients().items():
-            assert type(client) == BleakClient
             status = BLEStatus(label, client, self.remove_device, self.retry_device, parent=self)
             status.resize(self.width(), status.height())
-            client.set_disconnected_callback(status.set_connected(False))
             self.statuses[label] = status
         
     def remove_device(self, device_name):
@@ -58,6 +56,7 @@ class StatusTray(QScrollArea):
         self.set_layout_widget()
 
     def retry_device(self, device_name, status):
+        print("Trying retry")
         self.dm.connect_client(device_name)
         self.dm.connect_connected_callback(status.set_status)
 

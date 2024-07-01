@@ -41,14 +41,14 @@ def param_cos(args, data):
     b = args["b"]
     c = args["c"]
     d = args["d"]
-    return [a*math.cos(b*data + c)+d]
+    return a*math.cos(b*data + c)+d
 
 def param_sin(args, data):
     a = args["a"]
     b = args["b"]
     c = args["c"]
     d = args["d"]
-    return [a*math.sin(b*data + c)+d]
+    return a*math.sin(b*data + c)+d
 
 def ble_unpack(next_coro, _, data):
     print("unpacking")

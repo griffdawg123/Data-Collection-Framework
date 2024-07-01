@@ -53,16 +53,17 @@ def get_format_string(lengths, signeds):
     assert len(lengths) == len(signeds)
     return "".join([FORMATS[lengths[i]] if signeds[i] else FORMATS[lengths[i]].upper() for i in range(len(lengths))])
 
-def parse_bytearray(chunks_config: Optional[Dict], bytes: bytearray) -> List[float]:
+def parse_bytearray(chunks_config: Optional[Dict], bytes: bytearray) -> float:
     chunks = chunks_config["chunks"] if chunks_config else [{"length": len(bytes), "signed": True, "remainder":0}]
-    if not bytes: return [0]*len(chunks)
+    which_chunk = chunks_config["chunk"] if chunks_config else 0
+    if not bytes: return 0
     total_len = len(bytes)
     print(total_len, chunks)
     assert total_len == sum([c["length"] for c in chunks])
     lengths = [chunk["length"] for chunk in chunks]
     signeds = [chunk["signed"] for chunk in chunks]
     remainders = [chunk["remainder"] for chunk in chunks]
-    return to_value(get_format_string(lengths, signeds), remainders, bytes)
+    return to_value(get_format_string(lengths, signeds), remainders, bytes)[which_chunk]
 
 def hex_to_rgb(hex):
     if hex == "":
