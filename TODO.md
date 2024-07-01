@@ -14,16 +14,17 @@
 - [x] Start notify jobs when start is clicked so the actual start of the graph is after all successful
 - [ ] Ensure if Fixed point is chosen, the chunk chooser is shown
 - [ ] Ensure that if Existing config is ble, show source/characteristic combobox
+- [ ] Make it so that By default, args is shown as BLE source is also the default
+- [ ] Add disconnected callback to show in status tray
+- [ ] Graph form needs to fully reform itself correctly - So that it resaves correctly
+- [ ] Why aren't multiple notify characteristics working?
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
 ## Backlog
 - [ ] Ensure only my logging is used
-- [ ] Add disconnected callback to show in status tray
 - [ ] Change Source form to allow for choice of which Bytearray chunk to be used
-- [ ] Make it so that By default, args is shown as BLE source is also the default
+- [ ] Share sources across graphs
 - [ ] JSON Schema implementation for validation
-- [ ] Graph form needs to fully reform itself correctly - So that it resaves correctly
-- [ ] Why aren't multiple notify characteristics working?
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs
 - [ ] Data Saving
