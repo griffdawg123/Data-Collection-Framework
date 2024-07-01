@@ -72,8 +72,10 @@ class ConfigForm(QWidget):
         self.y_label.setText(config.get("y_label",""))
         self.y_units = QLineEdit()
         self.y_units.setText(config.get("y_units",""))
+        print(config.get("sources"))
         for source in config.get("sources", []):
             self.add_source(source)
+        print("Source Map", self.source_map)
         self.sources.currentTextChanged.connect(self.change_source)
         
         self.init_UI()
@@ -108,10 +110,12 @@ class ConfigForm(QWidget):
 
     def add_source(self, source = {}):
         text = source.get("source_name", "")
+        print("New Source Name", text)
         if text == "" or text in self.source_map.keys():
             return
         source_form = SourceForm(source)
-        self.source_map[self.new_source_name] = source_form
+        print("New Source Name", self.new_source_name)
+        self.source_map[text] = source_form
         self.sources.addItem(text)
         self.sources.setCurrentText(text)
         self.source_stack.addWidget(source_form)
@@ -125,6 +129,7 @@ class ConfigForm(QWidget):
         del self.source_map[self.sources.currentText()]
         
     def change_source(self):
+        print(self.source_map)
         self.source_stack.setCurrentWidget(self.source_map[self.sources.currentText()])
 
 class SourceForm(QWidget):
@@ -142,9 +147,12 @@ class SourceForm(QWidget):
         source_values = list(self.available_sources.values())
         self.args = BLESourceArgsForm(config.get("args", {}))
         self.source_type.addItems(source_keys)
-        print(config.get("type"))
         self.source_type.setCurrentIndex(source_values.index(config.get("type","ble"))) 
         self.source_type.currentTextChanged.connect(lambda txt: self.args.show() if txt == "BLE Device" else self.args.hide())
+        if self.source_type.currentText() == "BLE Device":
+            self.args.show()
+        else:
+            self.args.hide()
         self.pen_color = QPushButton("Choose Color")
         self.pen_color_dialog = QColorDialog()
         self.pen_color.clicked.connect(self.pen_color_dialog.open)
@@ -221,7 +229,6 @@ class BLESourceArgsForm(QWidget):
         layout.addRow(self.tr("Characteristic: "), self.characteristic)
         layout.addRow(self.tr("UUID: "), self.UUID_input)
         self.setLayout(layout)
-        self.show()
     
     def select_type(self, button):
         if button.text() == self.read.text():

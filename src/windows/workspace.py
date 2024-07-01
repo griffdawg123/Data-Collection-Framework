@@ -148,12 +148,14 @@ class Workspace(QWidget):
         self.plots.restart()
 
     def edit_config(self):
+        self.config = self.config_manager.load_config()
         config_dialog = GraphConfig(self.config.get("plots", {}))
         config_dialog.hide()
         config = config_dialog.get_config()
         if not config:
             return
         self.config["plots"] = config
+        self.config_manager.save_config(self.config)
         self.workspace_layout.removeWidget(self.plots)
         self.plots.stop()
         self.plots.close()

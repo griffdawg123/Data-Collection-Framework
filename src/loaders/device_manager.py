@@ -1,8 +1,10 @@
 from asyncio import Task, TaskGroup, get_event_loop
+from functools import partial
 from typing import Any, Callable, Generator, List
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from bleak import BleakClient
+from bleak.backends.characteristic import BleakGATTCharacteristic
 
 class Singleton(type):
     _instances = {}
@@ -60,8 +62,9 @@ class DeviceManager(metaclass=Singleton):
     # Connection Management
 
     def connect_client(self, name):
+        print("Connecting", name)
         loop = get_event_loop()
-        client = self.clients[name]
+        client: BleakClient = self.clients[name]
         connection_task = loop.create_task(client.connect(), name=name)
         self.task_set.add(connection_task)
         connection_task.add_done_callback(self.task_set.discard)
@@ -72,7 +75,8 @@ class DeviceManager(metaclass=Singleton):
         connection_okay = True
         try:
             task.result()
-        except:
+        except Exception as e:
+            print(e, type(e))
             connection_okay = False
         self.messenger.connected_signal.emit(task.get_name(), connection_okay)
 
@@ -103,12 +107,22 @@ class DeviceManager(metaclass=Singleton):
         tg_task.add_done_callback(lambda _: self.messenger.notify_tasks_complete.emit(True))
 
     async def await_start_notify_tasks(self, task_set: List):
+        results = []
         async with TaskGroup() as tg:
             for task in task_set:
                 client: BleakClient = task["client"]
                 UUID: str = task["UUID"]
                 source: Generator = task["source"]
-                tg.create_task(client.start_notify(UUID, lambda _, data: source.send(data)))
+                results.append(tg.create_task(client.start_notify(UUID, partial(self.send_checked_data, UUID, source))))
+        for task in results:
+            try:
+                task.result()
+            except Exception as e:
+                print(type(e), e)
+
+    def send_checked_data(self, UUID: str, source, characteristic: BleakGATTCharacteristic, data: bytearray):
+        if characteristic.uuid == UUID:
+            source.send(data)
 
     def connect_notify_done(self, func: Callable[[bool], Any]):
         self.messenger.notify_tasks_complete.connect(func)
@@ -120,11 +134,17 @@ class DeviceManager(metaclass=Singleton):
 
 
     async def await_stop_notify_tasks(self):
+        results = []
         async with TaskGroup() as tg:
             for task in self.current_notify_tasks:
                 client: BleakClient = task["client"]
                 UUID: str = task["UUID"]
-                tg.create_task(client.stop_notify(UUID))
+                results.append(tg.create_task(client.stop_notify(UUID)))
+        for task in results:
+            try:
+                task.result()
+            except Exception as e:
+                print(type(e), e)
 
     '''
     On Setup:

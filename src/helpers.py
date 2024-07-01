@@ -57,6 +57,7 @@ def parse_bytearray(chunks_config: Optional[Dict], bytes: bytearray) -> List[flo
     chunks = chunks_config["chunks"] if chunks_config else [{"length": len(bytes), "signed": True, "remainder":0}]
     if not bytes: return [0]*len(chunks)
     total_len = len(bytes)
+    print(total_len, chunks)
     assert total_len == sum([c["length"] for c in chunks])
     lengths = [chunk["length"] for chunk in chunks]
     signeds = [chunk["signed"] for chunk in chunks]
