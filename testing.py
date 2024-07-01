@@ -16,14 +16,14 @@ import struct
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
-from src.helpers import parse_bytearray
+from src.helpers import parse_bytearray, to_value
 
-def to_value(data: bytearray, format_string: str):
-    return struct.unpack(format_string, data) 
+# def to_value(data: bytearray, format_string: str):
+#     return struct.unpack(format_string, data) 
 
 def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
     """Simple notification handler which prints the data received."""
-    print(characteristic.description, data, to_value(data, 'i')[0]/(2**16))
+    print(characteristic.description, data, to_value('i', [16], data))
 
 
 async def main():

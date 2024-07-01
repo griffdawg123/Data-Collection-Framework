@@ -57,6 +57,7 @@ class Workspace(QWidget):
     def load_devices_from_config(self):
         self.dm.set_clients(self.config_manager.load_devices())
         self.config["devices"] = [helpers.format_config_name(name) for name in self.dm.get_client_names()]
+        print(self.config["devices"])
 
     # initialises UI
     def load_UI(self) -> None:
@@ -97,6 +98,7 @@ class Workspace(QWidget):
         devices = self.config["devices"]
         devices.append(helpers.format_config_name(device_name))
         self.config["devices"] = devices
+        self.config_manager.save_config(self.config)
 
     def remove_device_from_conf(self, device_name):
         devices = self.config["devices"]
@@ -148,12 +150,14 @@ class Workspace(QWidget):
         self.plots.restart()
 
     def edit_config(self):
+        self.config = self.config_manager.load_config()
         config_dialog = GraphConfig(self.config.get("plots", {}))
         config_dialog.hide()
         config = config_dialog.get_config()
         if not config:
             return
         self.config["plots"] = config
+        self.config_manager.save_config(self.config)
         self.workspace_layout.removeWidget(self.plots)
         self.plots.stop()
         self.plots.close()

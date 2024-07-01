@@ -50,7 +50,7 @@ class BLEStatus(QWidget):
         self.setStyleSheet("border: 1px solid black;")
 
     def set_connected(self, connected: bool):
-        self.current_status = LEDColor.OKAY if connected else LEDColor.ERROR
+        self.current_status = LEDColor.OKAY if connected or self.client.is_connected else LEDColor.ERROR
         self.update()
 
     def update(self): # pyright: ignore[reportIncompatibleMethodOverride]
@@ -60,7 +60,13 @@ class BLEStatus(QWidget):
 
     def retry_connect(self):
         self.current_status = LEDColor.IDLE
-        self.retry_func(self.label)
+        self.update()
+        self.retry_func(self.label, self)
+
+    def set_status(self, device_name, connected):
+        assert device_name == self.label
+        self.set_connected(connected)
+
 
     async def disconnect(self): # pyright: ignore[reportIncompatibleMethodOverride]
         await self.client.disconnect()

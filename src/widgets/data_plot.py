@@ -1,12 +1,10 @@
 import functools
-from typing import Dict, List, Optional
+from typing import List, Optional
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication
 from queue import Queue
 import pyqtgraph as pg
 import sys
-from asyncio import TaskGroup
-from qasync import QEventLoop
 from bleak import BleakClient
 
 from src.ble.static_generators import func_coro, param_cos, param_sin, sink_coro, source_coro
@@ -27,6 +25,7 @@ class Plots(pg.GraphicsLayoutWidget):
         self.notify_tasks: List = []
         self.data = []
         self.init_rows(config.get("rows", []))
+        print(self.data)
         self.timer = QTimer()
         self.timer.setInterval(int(1000/config.get("data_rate", 60)))
         self.init_timers()
@@ -70,13 +69,15 @@ class Plots(pg.GraphicsLayoutWidget):
             client: Optional[BleakClient] = None
             if source.get("type", "") == "ble":
                 args = source.get("args", {})
-                client = self.dm.get_clients()[args.get("name")]
+                client = self.dm.get_clients().get(args.get("name"))
                 print(args.get("name"))
-                assert(client)
-                self.notify_tasks.append({"UUID": args.get("UUID"), "client": client, "source": data_source})
-
-            curve = plot.plot(pen=hex_to_rgb(source.get("pen_color", "FFFFFF")))
+                if client:
+                    self.notify_tasks.append({"UUID": args.get("UUID"), "client": client, "source": data_source})
+            
+            color = source.get("pen_color", "FFFFFF") 
+            curve = plot.plot(pen=hex_to_rgb(color))
             curve.setData(queue.queue)
+
             
             source_info = {
                 "data" : queue,
@@ -85,6 +86,7 @@ class Plots(pg.GraphicsLayoutWidget):
                 "source" : data_source,
                 "curve" : curve,
                 "client" : client,
+                "color" : color,
             }
             self.data[i][j].append(source_info)
 
@@ -94,13 +96,18 @@ class Plots(pg.GraphicsLayoutWidget):
         queue: Queue = self.data[i][j][k].get("data")
         queue.get()
         # TODO: Change input form to allow choice on different chunks
-        queue.put(data[0])
+        queue.put(data)
 
     def update_plots(self):
-        for row in self.data:
-            for plot in row:
-                for source in plot:
-                    source["curve"].setData(source["data"].queue)
+        for i, row in enumerate(self.data):
+            for j, plot_confs in enumerate(row):
+                plot: pg.PlotItem = self.getItem(i, j)
+                plot.clear()
+                for conf in plot_confs:
+                    curve = plot.plot(pen=hex_to_rgb(conf["color"]))
+                    curve.setData(conf["data"].queue)
+                    
+
 
     def on_timeout(self, source):
         next(source)

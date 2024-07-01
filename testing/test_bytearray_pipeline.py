@@ -18,10 +18,10 @@ def sink(result_list):
 @pytest.fixture
 def bytearray_config():
     return {"chunks" :[{
-    "length": 32,
+    "length": 4,
     "remainder": 16,
     "signed": False,
-            }]}
+    }], "chunk": 0}
 
 @pytest.fixture
 def func(sink, bytearray_config):

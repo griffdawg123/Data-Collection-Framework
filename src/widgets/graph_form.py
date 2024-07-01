@@ -1,8 +1,7 @@
 from abc import abstractmethod
-from enum import Enum, IntEnum
-import functools
+from enum import IntEnum
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
         QButtonGroup,
@@ -12,7 +11,6 @@ from PyQt6.QtWidgets import (
         QDoubleSpinBox,
         QFormLayout,
         QHBoxLayout,
-        QInputDialog,
         QLabel,
         QLineEdit,
         QPushButton,
@@ -28,11 +26,10 @@ from src.ble.ble_scanner import get_services
 from src.loaders.device_manager import DeviceManager
 
 class ConfigForm(QWidget):
-    def __init__(self, config = {}, clients = {}) -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
         self.title = QLineEdit()
-        self.title.setText(config.get("title", ""))
-        # self.clients = clients
+        self.title.setText(config.get("title", "Untitled"))
         self.new_source_name_edit = QLineEdit()
         self.new_source_name_edit.textChanged.connect(
                 lambda s: self.new_source_button.setDisabled(
@@ -42,10 +39,7 @@ class ConfigForm(QWidget):
         self.new_source_name = ""
         def set_source_name(s):
             self.new_source_name = s
-            print(self.new_source_name)
         self.new_source_name_edit.textChanged.connect(set_source_name)        
-
-
         def new_source_clicked():
             self.add_source({"source_name": self.new_source_name})
         self.new_source_button = QPushButton("Add Source")
@@ -59,7 +53,7 @@ class ConfigForm(QWidget):
 
         self.data_points = QSpinBox()
         self.data_points.setRange(1, 250)
-        self.data_points.setValue(config.get("num_data_points", 1))
+        self.data_points.setValue(config.get("num_data_points", 100))
 
         self.y_max = QDoubleSpinBox()
         self.y_max.setRange(float('-inf'), float('inf'))
@@ -76,11 +70,13 @@ class ConfigForm(QWidget):
         self.y_label.setText(config.get("y_label",""))
         self.y_units = QLineEdit()
         self.y_units.setText(config.get("y_units",""))
-        
-        self.init_UI()
+        print(config.get("sources"))
         for source in config.get("sources", []):
             self.add_source(source)
+        print("Source Map", self.source_map)
         self.sources.currentTextChanged.connect(self.change_source)
+        
+        self.init_UI()
 
     def init_UI(self):
         layout = QFormLayout()
@@ -112,10 +108,12 @@ class ConfigForm(QWidget):
 
     def add_source(self, source = {}):
         text = source.get("source_name", "")
+        print("New Source Name", text)
         if text == "" or text in self.source_map.keys():
             return
         source_form = SourceForm(source)
-        self.source_map[self.new_source_name] = source_form
+        print("New Source Name", self.new_source_name)
+        self.source_map[text] = source_form
         self.sources.addItem(text)
         self.sources.setCurrentText(text)
         self.source_stack.addWidget(source_form)
@@ -129,6 +127,7 @@ class ConfigForm(QWidget):
         del self.source_map[self.sources.currentText()]
         
     def change_source(self):
+        print(self.source_map)
         self.source_stack.setCurrentWidget(self.source_map[self.sources.currentText()])
 
 class SourceForm(QWidget):
@@ -147,7 +146,11 @@ class SourceForm(QWidget):
         self.args = BLESourceArgsForm(config.get("args", {}))
         self.source_type.addItems(source_keys)
         self.source_type.setCurrentIndex(source_values.index(config.get("type","ble"))) 
-        self.source_type.currentIndexChanged.connect(lambda idx: self.args.show() if idx == 0 else self.args.hide())
+        self.source_type.currentTextChanged.connect(lambda txt: self.args.show() if txt == "BLE Device" else self.args.hide())
+        if self.source_type.currentText() == "BLE Device":
+            self.args.show()
+        else:
+            self.args.hide()
         self.pen_color = QPushButton("Choose Color")
         self.pen_color_dialog = QColorDialog()
         self.pen_color.clicked.connect(self.pen_color_dialog.open)
@@ -165,8 +168,6 @@ class SourceForm(QWidget):
         layout.addRow(self.pen_color, self.pen_color_input)
         layout.addRow(QLabel("Function: "), self.func)
 
-        self.args.show() if self.source_type.currentIndex == 0 else self.args.hide()
-
         self.setLayout(layout)
         self.show()
 
@@ -183,7 +184,7 @@ class SourceForm(QWidget):
         self.pen_color_input.setText(color.name())
 
 class BLESourceArgsForm(QWidget):
-    def __init__(self, config = {}, clients = {}) -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
         self.config = config
         self.dm: DeviceManager = DeviceManager()
@@ -191,7 +192,7 @@ class BLESourceArgsForm(QWidget):
         if not self.current_client and len(self.dm.get_clients()) > 0:
             self.current_client = list(self.dm.get_clients().values())[0]
         self.current_client_characteristics = {}
-        self.current_type = "read"
+        self.current_type = self.config.get("type", "read")
         self.read = QRadioButton("Read")
         self.read.setChecked(self.config.get("type", self.current_type) == "read")
         self.notify = QRadioButton("Notify")
@@ -213,6 +214,8 @@ class BLESourceArgsForm(QWidget):
         self.characteristic.currentTextChanged.connect(self.set_characteristics)
         self.UUID_input = QLineEdit()
         self.UUID_input.setText(self.config.get("UUID", ""))
+        if self.config.get("characteristic"):
+            self.characteristic.setCurrentText(self.config.get("characteristic"))
         self.dm.connect_to_remove(self.update_client_select)
         self.dm.connect_to_add(self.update_client_select)
         self.init_UI()
@@ -224,7 +227,6 @@ class BLESourceArgsForm(QWidget):
         layout.addRow(self.tr("Characteristic: "), self.characteristic)
         layout.addRow(self.tr("UUID: "), self.UUID_input)
         self.setLayout(layout)
-        self.show()
     
     def select_type(self, button):
         if button.text() == self.read.text():
@@ -237,7 +239,6 @@ class BLESourceArgsForm(QWidget):
             self.characteristic.addItems(get_services(self.current_client).get(self.current_type, {}).keys())
         
     def select_client(self, client_name):
-        # self.current_client: Optional[ BleakClient ] = self.clients.get(client_name, None)
         self.current_client: Optional[ BleakClient ] = self.dm.get_clients().get(client_name, None)
         if self.current_client:
             self.current_client_characteristics = get_services(self.current_client)
@@ -254,16 +255,11 @@ class BLESourceArgsForm(QWidget):
             self.client_select.removeItem(idx)
         self.client_select.addItems(self.dm.get_clients().keys())
 
-    # def set_clients(self, clients):
-    #     self.clients = clients
-    #     for idx in range(self.client_select.count(), -1, -1):
-    #         self.client_select.removeItem(idx)
-    #     self.client_select.addItems(self.clients)
-
     def get_config(self):
         return {
             "name": self.client_select.currentText(),
             "UUID": self.UUID_input.text(),
+            "characteristic": self.characteristic.currentText(),
             "type": self.current_type,
                 }
 
@@ -273,9 +269,6 @@ class FuncInfo(IntEnum):
     FORM = 2
 
 class FuncForm(QWidget):
-
-    
-
     def __init__(self, config = {}) -> None:
         super().__init__()
         print(config)
@@ -296,6 +289,10 @@ class FuncForm(QWidget):
         )
         self.funcs[self.param_form.currentIndex()][FuncInfo.FORM].set_values(config.get("params", {}))
         self.func_type.currentTextChanged.connect(self.update_param_form)
+
+        self.func_type.setCurrentIndex(
+                [func[FuncInfo.ID] for func in self.funcs].index(config.get("type", "sin"))
+        )
         self.init_UI()
 
     def init_UI(self):
@@ -371,6 +368,9 @@ class TrigForm(ParamForm):
 class QFixedPointForm(ParamForm):
     def __init__(self) -> None:
         super().__init__()
+        self.which_chunk = QSpinBox()
+        self.which_chunk.setMinimum(0)
+        self.which_chunk.setMaximum(0)
         self.add_chunk_button = QPushButton("Add Chunk")
         self.remove_chunk_button = QPushButton("Remove Chunk")
 
@@ -382,6 +382,14 @@ class QFixedPointForm(ParamForm):
 
     def init_UI(self):
         self.vbox = QVBoxLayout()
+
+        which_chunk = QWidget()
+        which_chunk_layout = QHBoxLayout()
+        which_chunk_label = QLabel("Which Chunk: ")
+        which_chunk_layout.addWidget(which_chunk_label)
+        which_chunk_layout.addWidget(self.which_chunk)
+        which_chunk.setLayout(which_chunk_layout)
+        self.vbox.addWidget(which_chunk)
         
         buttons = QWidget()
         buttons_layout = QHBoxLayout()
@@ -393,13 +401,17 @@ class QFixedPointForm(ParamForm):
         self.setLayout(self.vbox)
 
     def get_config(self):
-        return {"chunks" : [ c.get_config() for c in self.chunks ]}
+        return {
+                "chunk" : self.which_chunk.value(),
+                "chunks" : [ c.get_config() for c in self.chunks ]
+        }
 
-    def add_chunk(self, checked = False, chunk: Dict = {}):
+    def add_chunk(self, _=False, chunk: Dict = {}):
         print("Chunk: ", chunk)
         new_chunk = QFixedPointChunk(chunk)
         self.vbox.insertWidget(len(self.chunks), new_chunk)
         self.chunks.append(new_chunk)
+        self.which_chunk.setMaximum(len(self.chunks)-1)
 
     def remove_chunk(self):
         if len(self.chunks) == 0:
@@ -407,8 +419,10 @@ class QFixedPointForm(ParamForm):
         to_remove = self.chunks.pop()
         self.vbox.removeWidget(to_remove)
         self.updateGeometry()
+        self.which_chunk.setMaximum(len(self.chunks)-1)
 
     def set_values(self, config):
+        self.which_chunk.setValue(config.get("chunk", 0))
         for chunk in config.get("chunks", []):
             self.add_chunk(chunk=chunk)
 
@@ -423,12 +437,12 @@ class QFixedPointChunk(ParamForm):
         self.remainder.setRange(0, 512*8)
         self.remainder.setValue(chunk.get("remainder", 0))
         self.signed = QCheckBox()
-        self.signed.setChecked(chunk.get("checked", False))
+        self.signed.setChecked(chunk.get("signed", False))
         self.init_UI()
 
     def init_UI(self):
         layout = QFormLayout()
-        layout.addRow(self.tr("Length of Chunk (in bits)"), self.length)
+        layout.addRow(self.tr("Length of Chunk (in bytes)"), self.length)
         layout.addRow(self.tr("Number of Remainder bits (n in m Q n)"), self.remainder)
         layout.addRow(self.tr("Signed?"), self.signed)
 
