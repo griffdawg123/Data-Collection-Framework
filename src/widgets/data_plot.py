@@ -75,16 +75,12 @@ class Plots(pg.GraphicsLayoutWidget):
             # activates
 
             source_type = plotline.get("source", "Time")
-            data_source = source_coro(func)
-            next(data_source)
+            if source_type not in self.notify_tasks:
+                self.notify_tasks.append(source_type)
+                # Set up ble
 
-            # client: Optional[BleakClient] = None
-            # if source.get("type", "") == "ble":
-            #     args = source.get("args", {})
-            #     client = self.dm.get_clients().get(args.get("name"))
-            #     print(args.get("name"))
-            #     if client:
-            #         self.notify_tasks.append({"UUID": args.get("UUID"), "client": client, "source": data_source})
+            data_source = source_coro(func, index=plotline.get("chunk", 0))
+            next(data_source)
             
             color = plotline.get("pen_color", "FFFFFF") 
             curve = plot.plot(pen=hex_to_rgb(color))
@@ -105,7 +101,6 @@ class Plots(pg.GraphicsLayoutWidget):
 
     def update_data(self, i, j, k, data):
         # update then queue of this data
-        print("Data: ", data)
         queue: Queue = self.plot_information[i][j][k].get("data")
         queue.get()
         queue.put(data)

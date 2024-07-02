@@ -7,6 +7,7 @@ def source_coro(next_coro, index = 0):
     try:
         while True:
             data = yield
+            print(f"Source received: {data}")
             next_coro.send(data[index])
     except GeneratorExit:
         print("Exiting Coro")
@@ -15,6 +16,8 @@ def func_coro(func, next_coro):
     try:
         while True:
             data = yield
+            print(f"Func received: {data}")
+            print(f"func(data) = {func(data)}")
             next_coro.send(func(data))
     except GeneratorExit:
         print("Exiting Coro")

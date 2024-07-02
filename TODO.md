@@ -32,6 +32,7 @@
 - [ ] JSON Schema implementation for validation
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs
+- [ ] Read Functionality for BLE
 - [ ] Data Saving
 - [ ] Data Replaying
 ## Continuous Integration

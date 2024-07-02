@@ -1,5 +1,7 @@
 from abc import abstractmethod
 from enum import IntEnum
+import json
+import os
 import sys
 from typing import Dict, Optional
 from PyQt6.QtGui import QColor
@@ -24,7 +26,10 @@ from bleak import BleakClient
 
 from src import helpers
 from src.ble.ble_scanner import get_services
+from src.loaders.config_loader import load_source, save_source
 from src.loaders.device_manager import DeviceManager
+from src.widgets import source_dialog
+from src.widgets.source_dialog import BLESourceDialog
 
 class ConfigForm(QWidget):
     def __init__(self, config = {}) -> None:
@@ -155,7 +160,11 @@ class PlotlineForm(QWidget):
         self.available_sources = ["Time"] + [file_name.removesuffix(".config") for file_name in helpers.get_files("config/sources")]
         self.source_select = QComboBox()
         self.source_select.addItems(self.available_sources)
-        self.source_select.setCurrentIndex(self.available_sources.index(config.get("source", "Time")))
+        self.source_select.setCurrentIndex(self.available_sources.index(helpers.format_config_name(config.get("source", "Time"))))
+
+        # Source chunk select
+        self.source_chunk_select = QSpinBox()
+        self.source_chunk_select.setMinimum(0)
 
         # Add/Edit Source
         self.source_add_button = QPushButton("Add New Source")
@@ -179,6 +188,7 @@ class PlotlineForm(QWidget):
         layout = QFormLayout()
         layout.addRow(self.tr("Plotline name: "), self.name)
         layout.addRow(self.tr("Source: "), self.source_select)
+        layout.addRow(self.tr("Source Chunk: "), self.source_chunk_select)
         layout.addRow(self.source_add_button, self.source_edit_button)
         layout.addRow(self.pen_color, self.pen_color_input)
         layout.addRow(QLabel("Function: "), self.func)
@@ -192,16 +202,36 @@ class PlotlineForm(QWidget):
             "plotline_name": self.name.text(),
             "pen_color": self.pen_color_input.text(),
             "func" : self.func.get_config(),
+            "chunk" : self.source_chunk_select.value(),
         }
 
     def set_color_text(self, color: QColor):
         self.pen_color_input.setText(color.name())
 
     def add_source(self):
-        print("add")
+        source_dialog = BLESourceDialog()
+        source_dialog.hide()
+        config = source_dialog.get_config()
+        if not config:
+            return
+        self.set_source(config)
 
     def edit_source(self):
-        print("edit")
+        source_dialog = BLESourceDialog(load_source(self.source_select.currentText()))
+        config = source_dialog.get_config()
+        if not config:
+            return
+        self.set_source(config)
+        
+    def set_source(self, config):
+        # Save config to a new file
+        print(config)
+        save_source(config)
+        # add new config to source selection box
+        self.source_select.addItem(config["name"])
+        # set current source to the new one
+        self.source_select.setCurrentText(config["name"])
+
 
 class FuncInfo(IntEnum):
     LABEL = 0

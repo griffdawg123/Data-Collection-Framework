@@ -1,10 +1,12 @@
 from asyncio import Task, TaskGroup, get_event_loop
 from functools import partial
-from typing import Any, Callable, Generator, List
+from typing import Any, Callable, Dict, Generator, List
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from src.loaders.config_loader import load_source
+from src.loaders.datastream_manager import DatastreamManager
 from src.loaders.singleton import Singleton
 
 class ConnectionMessenger(QObject):
@@ -18,10 +20,12 @@ class DeviceManager(metaclass=Singleton):
 
     def __init__(self, clients = {}) -> None:
         self.config = ""
+        self.clients: Dict[str, BleakClient] = {}
         self.set_clients(clients)
         self.task_set = set()
         self.messenger = ConnectionMessenger()
         self.current_notify_tasks = []
+        self.datastream = DatastreamManager()
 
     # Client Dict management
 
@@ -42,7 +46,9 @@ class DeviceManager(metaclass=Singleton):
         return self.clients
 
     def remove_client(self, name: str):
-        client = self.clients.get(name)
+        if name not in self.clients.keys():
+            return
+        client = self.clients[name]
         self.disconnect_client(client)
         del self.clients[name]
         self.messenger.client_removed.emit(name)
@@ -94,29 +100,40 @@ class DeviceManager(metaclass=Singleton):
 
     # Notify tasks
 
-    def start_notify(self, task_set: List):
-        self.current_notify_tasks = task_set
+    # For all sources in source list (not time), load config into a map
+    # Start notify of all clients and UUIDs callback function:
+        # set value with matching source name in datastream 
+
+    def start_notify(self, source_list: List):
+        UUID_maps = {}
+        self.current_notify_tasks = []
+        for source in source_list:
+            config = load_source(source)
+            if config:
+                map = {}
+                map["name"] = source
+                map["chunks"] = config["chunks"]
+                UUID_maps[config["UUID"]] = map
+
+                self.current_notify_tasks.append(config)
+        
+        self.datastream.set_maps(UUID_maps)
         loop = get_event_loop()
-        tg_task = loop.create_task(self.await_start_notify_tasks(task_set))
+        tg_task = loop.create_task(self.await_start_notify_tasks())
         tg_task.add_done_callback(lambda _: self.messenger.notify_tasks_complete.emit(True))
 
-    async def await_start_notify_tasks(self, task_set: List):
+    async def await_start_notify_tasks(self):
         results = []
         async with TaskGroup() as tg:
-            for task in task_set:
-                client: BleakClient = task["client"]
+            for task in self.current_notify_tasks:
+                client: BleakClient = self.clients[task["client"]]
                 UUID: str = task["UUID"]
-                source: Generator = task["source"]
-                results.append(tg.create_task(client.start_notify(UUID, partial(self.send_checked_data, UUID, source))))
+                results.append(tg.create_task(client.start_notify(UUID, self.datastream.update_value)))
         for task in results:
             try:
                 task.result()
             except Exception as e:
                 print(type(e), e)
-
-    def send_checked_data(self, UUID: str, source, characteristic: BleakGATTCharacteristic, data: bytearray):
-        if characteristic.uuid == UUID:
-            source.send(data)
 
     def connect_notify_done(self, func: Callable[[bool], Any]):
         self.messenger.notify_tasks_complete.connect(func)
@@ -131,7 +148,7 @@ class DeviceManager(metaclass=Singleton):
         results = []
         async with TaskGroup() as tg:
             for task in self.current_notify_tasks:
-                client: BleakClient = task["client"]
+                client: BleakClient = self.clients[task["client"]]
                 UUID: str = task["UUID"]
                 results.append(tg.create_task(client.stop_notify(UUID)))
         for task in results:
