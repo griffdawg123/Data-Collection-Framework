@@ -102,3 +102,16 @@ class ConfigLoader():
 
     def get_title(self) -> str:
         return self.config["name"]
+
+def save_source(source_dict):
+    if not os.path.exists("config/sources"):
+        os.makedirs("config/sources")
+    file_name = format_config_name(source_dict["source_name"])
+    with open(f"config/sources/{file_name}.config", "w", encoding='utf-8') as outfile:
+        outfile.write(json.dumps(source_dict))    
+
+def load_source(source_name: str) -> Dict:
+    file_name = format_config_name(source_name)
+    with open(f"config/sources/{file_name}.config", "r", encoding='utf-8') as infile:
+        return json.loads(infile.read())
+

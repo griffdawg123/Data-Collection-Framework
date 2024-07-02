@@ -5,13 +5,7 @@ from typing import Any, Callable, Generator, List
 from PyQt6.QtCore import QObject, pyqtSignal
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
-
-class Singleton(type):
-    _instances = {}
-    def __call__(cls, *args: Any, **kwds: Any) -> Any:
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwds)
-        return cls._instances[cls]
+from src.loaders.singleton import Singleton
 
 class ConnectionMessenger(QObject):
     connected_signal = pyqtSignal(str, bool) # name of client, connection successful

@@ -22,34 +22,43 @@ from PyQt6.QtWidgets import (
         )
 from bleak import BleakClient
 
+from src import helpers
 from src.ble.ble_scanner import get_services
 from src.loaders.device_manager import DeviceManager
 
 class ConfigForm(QWidget):
     def __init__(self, config = {}) -> None:
         super().__init__()
+
+        # Plot Title
         self.title = QLineEdit()
         self.title.setText(config.get("title", "Untitled"))
-        self.new_source_name_edit = QLineEdit()
-        self.new_source_name_edit.textChanged.connect(
-                lambda s: self.new_source_button.setDisabled(
+
+        # New Plotline
+        self.new_plotline_edit = QLineEdit()
+        self.new_plotline_edit.textChanged.connect(
+                lambda s: self.add_plotline_button.setDisabled(
                     len(s) == 0
                 )
             )
-        self.new_source_name = ""
-        def set_source_name(s):
-            self.new_source_name = s
-        self.new_source_name_edit.textChanged.connect(set_source_name)        
-        def new_source_clicked():
-            self.add_source({"source_name": self.new_source_name})
-        self.new_source_button = QPushButton("Add Source")
-        self.new_source_button.clicked.connect(new_source_clicked)
-        self.new_source_button.setDisabled(True)
-        self.remove_source_button = QPushButton("Remove Source")
-        self.remove_source_button.clicked.connect(self.remove_source)
-        self.source_map = {}
-        self.sources = QComboBox()
-        self.source_stack = QStackedWidget()
+        self.new_plotline_name = ""
+        # self.new_source_combo = QComboBox()
+        # self.available_sources = ["Time"] + [file_name.removesuffix(".config") for file_name in helpers.get_files("config/sources") ]
+        # self.new_source_combo.addItems(self.available_sources)
+        # self.new_source_combo.setLineEdit(self.new_source_name_edit)
+        def set_plotline_name(s):
+            self.new_plotline_name = s
+        self.new_plotline_edit.textChanged.connect(set_plotline_name)        
+        def new_plotline_button_clicked():
+            self.add_plotline({"plotline_name": self.new_plotline_name})
+        self.add_plotline_button = QPushButton("Add Plotline")
+        self.add_plotline_button.clicked.connect(new_plotline_button_clicked)
+        # self.new_source_button.setDisabled(True)
+        self.remove_plotline_button = QPushButton("Remove Plotline")
+        self.remove_plotline_button.clicked.connect(self.remove_plotline)
+        self.plotline_forms = {}
+        self.plotline_select = QComboBox()
+        self.plotline_config_edit_stack = QStackedWidget()
 
         self.data_points = QSpinBox()
         self.data_points.setRange(1, 250)
@@ -70,11 +79,11 @@ class ConfigForm(QWidget):
         self.y_label.setText(config.get("y_label",""))
         self.y_units = QLineEdit()
         self.y_units.setText(config.get("y_units",""))
-        print(config.get("sources"))
-        for source in config.get("sources", []):
-            self.add_source(source)
-        print("Source Map", self.source_map)
-        self.sources.currentTextChanged.connect(self.change_source)
+
+        # Add existing plots to the config
+        for source in config.get("plotlines", []):
+            self.add_plotline(source)
+        self.plotline_select.currentTextChanged.connect(self.change_plotline)
         
         self.init_UI()
 
@@ -88,9 +97,9 @@ class ConfigForm(QWidget):
         layout.addRow(self.tr("X axis units"), self.x_units)
         layout.addRow(self.tr("Y axis label"), self.y_label)
         layout.addRow(self.tr("Y axis units"), self.y_units)
-        layout.addRow(self.new_source_button, self.new_source_name_edit)
-        layout.addRow(self.remove_source_button, self.sources)
-        layout.addWidget(self.source_stack)
+        layout.addRow(self.add_plotline_button, self.new_plotline_edit)
+        layout.addRow(self.remove_plotline_button, self.plotline_select)
+        layout.addWidget(self.plotline_config_edit_stack)
         self.setLayout(layout)
 
     def get_config(self):
@@ -103,68 +112,74 @@ class ConfigForm(QWidget):
                 "x_units" : self.x_units.text(),
                 "y_label" : self.y_label.text(),
                 "x_label" : self.x_label.text(),
-                "sources" : [ s.get_config() for s in self.source_map.values() ]
+                "plotlines" : [ s.get_config() for s in self.plotline_forms.values() ]
         }
 
-    def add_source(self, source = {}):
-        text = source.get("source_name", "")
-        print("New Source Name", text)
-        if text == "" or text in self.source_map.keys():
+    def add_plotline(self, source = {}):
+        # If we are trying to add a plot without a name
+        text = source.get("plotline_name", "")
+        if text == "" or text in self.plotline_forms.keys():
             return
-        source_form = SourceForm(source)
-        print("New Source Name", self.new_source_name)
-        self.source_map[text] = source_form
-        self.sources.addItem(text)
-        self.sources.setCurrentText(text)
-        self.source_stack.addWidget(source_form)
-        self.source_stack.setCurrentWidget(source_form)
 
-    def remove_source(self):
-        if len(self.source_map) == 0:
+        plotline_form = PlotlineForm(source)
+
+        # Add new form to be tracked
+        self.plotline_forms[text] = plotline_form
+        self.plotline_select.addItem(text)
+        self.plotline_select.setCurrentText(text)
+        self.plotline_config_edit_stack.addWidget(plotline_form)
+        self.plotline_config_edit_stack.setCurrentWidget(plotline_form)
+
+    def remove_plotline(self):
+        if len(self.plotline_forms) == 0:
             return
-        to_remove = self.source_map[self.sources.currentText()]
-        self.source_stack.removeWidget(to_remove)
-        del self.source_map[self.sources.currentText()]
+        to_remove = self.plotline_forms[self.plotline_select.currentText()]
+        self.plotline_config_edit_stack.removeWidget(to_remove)
+        del self.plotline_forms[self.plotline_select.currentText()]
         
-    def change_source(self):
-        print(self.source_map)
-        self.source_stack.setCurrentWidget(self.source_map[self.sources.currentText()])
+    def change_plotline(self):
+        print(self.plotline_forms)
+        self.plotline_config_edit_stack.setCurrentWidget(self.plotline_forms[self.plotline_select.currentText()])
 
-class SourceForm(QWidget):
+class PlotlineForm(QWidget):
     def __init__(self, config = {}) -> None:
         super().__init__()
         self.name = QLineEdit()
-        source_name: Optional[str] = config.get("source_name", None)
-        self.name.setText(source_name)
-        self.available_sources = {
-            "BLE Device" : "ble",
-            "Internal Clock" : "time",
-        }
-        self.source_type = QComboBox()
-        source_keys = list(self.available_sources.keys())
-        source_values = list(self.available_sources.values())
-        self.args = BLESourceArgsForm(config.get("args", {}))
-        self.source_type.addItems(source_keys)
-        self.source_type.setCurrentIndex(source_values.index(config.get("type","ble"))) 
-        self.source_type.currentTextChanged.connect(lambda txt: self.args.show() if txt == "BLE Device" else self.args.hide())
-        if self.source_type.currentText() == "BLE Device":
-            self.args.show()
-        else:
-            self.args.hide()
+
+        # Plotline Name
+
+        plotline_name: Optional[str] = config.get("plotline_name", None)
+        self.name.setText(plotline_name)
+
+        # Source Select
+        self.available_sources = ["Time"] + [file_name.removesuffix(".config") for file_name in helpers.get_files("config/sources")]
+        self.source_select = QComboBox()
+        self.source_select.addItems(self.available_sources)
+        self.source_select.setCurrentIndex(self.available_sources.index(config.get("source", "Time")))
+
+        # Add/Edit Source
+        self.source_add_button = QPushButton("Add New Source")
+        self.source_edit_button = QPushButton("Edit Source")
+        self.source_add_button.clicked.connect(self.add_source)
+        self.source_edit_button.clicked.connect(self.edit_source)
+
+        # Pen Color Select
         self.pen_color = QPushButton("Choose Color")
         self.pen_color_dialog = QColorDialog()
         self.pen_color.clicked.connect(self.pen_color_dialog.open)
         self.pen_color_input = QLineEdit()
         self.pen_color_input.setText(config.get("pen_color", ""))
         self.pen_color_dialog.currentColorChanged.connect(self.set_color_text)
+
+        # Func Select
         self.func = FuncForm(config.get("func", {}))
         self.init_UI()
 
     def init_UI(self):
         layout = QFormLayout()
-        layout.addRow(self.tr("Source name: "), self.name)
-        layout.addRow(self.tr("Source type: "), self.source_type)
-        layout.addWidget(self.args)
+        layout.addRow(self.tr("Plotline name: "), self.name)
+        layout.addRow(self.tr("Source: "), self.source_select)
+        layout.addRow(self.source_add_button, self.source_edit_button)
         layout.addRow(self.pen_color, self.pen_color_input)
         layout.addRow(QLabel("Function: "), self.func)
 
@@ -173,95 +188,20 @@ class SourceForm(QWidget):
 
     def get_config(self):
         return {
-            "type": self.available_sources.get(self.source_type.currentText(), ''),
-            "source_name": self.name.text(),
+            "source": self.source_select.currentText(),
+            "plotline_name": self.name.text(),
             "pen_color": self.pen_color_input.text(),
             "func" : self.func.get_config(),
-            "args" : self.args.get_config(),
         }
 
     def set_color_text(self, color: QColor):
         self.pen_color_input.setText(color.name())
 
-class BLESourceArgsForm(QWidget):
-    def __init__(self, config = {}) -> None:
-        super().__init__()
-        self.config = config
-        self.dm: DeviceManager = DeviceManager()
-        self.current_client = self.dm.get_clients().get(self.config.get("name", ""), None)
-        if not self.current_client and len(self.dm.get_clients()) > 0:
-            self.current_client = list(self.dm.get_clients().values())[0]
-        self.current_client_characteristics = {}
-        self.current_type = self.config.get("type", "read")
-        self.read = QRadioButton("Read")
-        self.read.setChecked(self.config.get("type", self.current_type) == "read")
-        self.notify = QRadioButton("Notify")
-        self.notify.setChecked(self.config.get("type", self.current_type) == "notify")
-        self.button_group = QButtonGroup()
-        self.button_group.addButton(self.read)
-        self.button_group.addButton(self.notify)
-        self.button_group.buttonClicked.connect(self.select_type)
-        self.client_select = QComboBox()
-        self.client_select.addItems(self.dm.get_clients().keys())
-        self.client_select.setCurrentText(self.config.get("name", ""))
-        self.client_select.currentTextChanged.connect(self.select_client)
-        self.characteristic = QComboBox()
-        self.characteristic.addItem("--- not connected ---")
-        print("Current client: ", self.current_client)
-        if self.current_client and self.current_client.is_connected:
-            self.characteristic.removeItem(0)
-            self.characteristic.addItems(get_services(self.current_client).get(self.current_type, {}).keys())
-        self.characteristic.currentTextChanged.connect(self.set_characteristics)
-        self.UUID_input = QLineEdit()
-        self.UUID_input.setText(self.config.get("UUID", ""))
-        if self.config.get("characteristic"):
-            self.characteristic.setCurrentText(self.config.get("characteristic"))
-        self.dm.connect_to_remove(self.update_client_select)
-        self.dm.connect_to_add(self.update_client_select)
-        self.init_UI()
+    def add_source(self):
+        print("add")
 
-    def init_UI(self):
-        layout = QFormLayout()
-        layout.addRow(self.read, self.notify)
-        layout.addRow(self.tr("Client: "), self.client_select)
-        layout.addRow(self.tr("Characteristic: "), self.characteristic)
-        layout.addRow(self.tr("UUID: "), self.UUID_input)
-        self.setLayout(layout)
-    
-    def select_type(self, button):
-        if button.text() == self.read.text():
-            self.current_type = "read"
-        elif button.text() == self.notify.text():
-            self.current_type = "notify"
-        for idx in range(self.characteristic.count(), -1, -1):
-            self.characteristic.removeItem(idx)
-        if self.current_client:
-            self.characteristic.addItems(get_services(self.current_client).get(self.current_type, {}).keys())
-        
-    def select_client(self, client_name):
-        self.current_client: Optional[ BleakClient ] = self.dm.get_clients().get(client_name, None)
-        if self.current_client:
-            self.current_client_characteristics = get_services(self.current_client)
-            print(self.current_client.address)
-            print( self.current_client_characteristics )
-
-    def set_characteristics(self, characteristic_name):
-        if self.current_client == None:
-            return
-        self.UUID_input.setText(get_services(self.current_client).get(self.current_type, {}).get(characteristic_name, ""))
-
-    def update_client_select(self, _):
-        for idx in range(self.client_select.count(), -1, -1):
-            self.client_select.removeItem(idx)
-        self.client_select.addItems(self.dm.get_clients().keys())
-
-    def get_config(self):
-        return {
-            "name": self.client_select.currentText(),
-            "UUID": self.UUID_input.text(),
-            "characteristic": self.characteristic.currentText(),
-            "type": self.current_type,
-                }
+    def edit_source(self):
+        print("edit")
 
 class FuncInfo(IntEnum):
     LABEL = 0
@@ -271,13 +211,11 @@ class FuncInfo(IntEnum):
 class FuncForm(QWidget):
     def __init__(self, config = {}) -> None:
         super().__init__()
-        print(config)
         self.form = QFormLayout()
         self.func_type = QComboBox()
         self.funcs = [
             ("Sin: asin(bx+c)+d", "sin", TrigForm()),
             ("Cos: acos(bx+c)+d", "cos", TrigForm()),
-            ("Q Fixed-Point: mQn encoding", "fixed_point", QFixedPointForm()),
             ("Identity: No Func", "identity", ParamForm()),
         ]
         self.func_type.addItems([func[FuncInfo.LABEL] for func in self.funcs])
@@ -365,92 +303,3 @@ class TrigForm(ParamForm):
         self.c.setValue(config.get("c", 0))
         self.d.setValue(config.get("d", 0))
 
-class QFixedPointForm(ParamForm):
-    def __init__(self) -> None:
-        super().__init__()
-        self.which_chunk = QSpinBox()
-        self.which_chunk.setMinimum(0)
-        self.which_chunk.setMaximum(0)
-        self.add_chunk_button = QPushButton("Add Chunk")
-        self.remove_chunk_button = QPushButton("Remove Chunk")
-
-        self.add_chunk_button.clicked.connect(self.add_chunk)
-        self.remove_chunk_button.clicked.connect(self.remove_chunk)
-        
-        self.chunks = []
-        self.init_UI()
-
-    def init_UI(self):
-        self.vbox = QVBoxLayout()
-
-        which_chunk = QWidget()
-        which_chunk_layout = QHBoxLayout()
-        which_chunk_label = QLabel("Which Chunk: ")
-        which_chunk_layout.addWidget(which_chunk_label)
-        which_chunk_layout.addWidget(self.which_chunk)
-        which_chunk.setLayout(which_chunk_layout)
-        self.vbox.addWidget(which_chunk)
-        
-        buttons = QWidget()
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self.add_chunk_button)
-        buttons_layout.addWidget(self.remove_chunk_button)
-        buttons.setLayout(buttons_layout)
-
-        self.vbox.addWidget(buttons)
-        self.setLayout(self.vbox)
-
-    def get_config(self):
-        return {
-                "chunk" : self.which_chunk.value(),
-                "chunks" : [ c.get_config() for c in self.chunks ]
-        }
-
-    def add_chunk(self, _=False, chunk: Dict = {}):
-        print("Chunk: ", chunk)
-        new_chunk = QFixedPointChunk(chunk)
-        self.vbox.insertWidget(len(self.chunks), new_chunk)
-        self.chunks.append(new_chunk)
-        self.which_chunk.setMaximum(len(self.chunks)-1)
-
-    def remove_chunk(self):
-        if len(self.chunks) == 0:
-            return
-        to_remove = self.chunks.pop()
-        self.vbox.removeWidget(to_remove)
-        self.updateGeometry()
-        self.which_chunk.setMaximum(len(self.chunks)-1)
-
-    def set_values(self, config):
-        self.which_chunk.setValue(config.get("chunk", 0))
-        for chunk in config.get("chunks", []):
-            self.add_chunk(chunk=chunk)
-
-class QFixedPointChunk(ParamForm):
-    def __init__(self, chunk: Dict = {}) -> None:
-        super().__init__()
-        self.length = QSpinBox()
-        self.length.setRange(0, 512*8)
-        self.length.setSingleStep(2)
-        self.length.setValue(chunk.get("length", 0))
-        self.remainder = QSpinBox()
-        self.remainder.setRange(0, 512*8)
-        self.remainder.setValue(chunk.get("remainder", 0))
-        self.signed = QCheckBox()
-        self.signed.setChecked(chunk.get("signed", False))
-        self.init_UI()
-
-    def init_UI(self):
-        layout = QFormLayout()
-        layout.addRow(self.tr("Length of Chunk (in bytes)"), self.length)
-        layout.addRow(self.tr("Number of Remainder bits (n in m Q n)"), self.remainder)
-        layout.addRow(self.tr("Signed?"), self.signed)
-
-        self.setLayout(layout)
-            
-    def get_config(self):
-        return {
-            "length" : self.length.value(),
-            "remainder" : self.remainder.value(),
-            "signed" : self.signed.isChecked(),
-                }
