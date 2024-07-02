@@ -64,7 +64,7 @@ class Plots(pg.GraphicsLayoutWidget):
             # When func receives a value, it will calculate the new value and pass it to sink
             func = func_coro(
                     functools.partial(
-                        self.funcs.get(plotline.get("func", {}).get("type"), lambda x: x),
+                        self.funcs.get(plotline.get("func", {}).get("type"), lambda _, x: x),
                         plotline.get("func", {}).get("params", {})
                     ),
                     sink

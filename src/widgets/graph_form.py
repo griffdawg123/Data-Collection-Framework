@@ -157,10 +157,10 @@ class PlotlineForm(QWidget):
         self.name.setText(plotline_name)
 
         # Source Select
-        self.available_sources = ["Time"] + [file_name.removesuffix(".config") for file_name in helpers.get_files("config/sources")]
+        self.available_sources = ["time"] + [file_name.removesuffix(".config") for file_name in helpers.get_files("config/sources")]
         self.source_select = QComboBox()
         self.source_select.addItems(self.available_sources)
-        self.source_select.setCurrentIndex(self.available_sources.index(helpers.format_config_name(config.get("source", "Time"))))
+        self.source_select.setCurrentIndex(self.available_sources.index(helpers.format_config_name(config.get("source", "time"))))
 
         # Source chunk select
         self.source_chunk_select = QSpinBox()
