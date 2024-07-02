@@ -154,6 +154,7 @@ class Workspace(QWidget):
         config_dialog = GraphConfig(self.config.get("plots", {}))
         config_dialog.hide()
         config = config_dialog.get_config()
+        print(config)
         if not config:
             return
         self.config["plots"] = config

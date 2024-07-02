@@ -1,20 +1,14 @@
-import time
 import math
 
 from typing import Callable
 
 
-def source_coro(takes_input: bool, next_coro):
-    value = None if takes_input else time.time()
+def source_coro(next_coro, index = 0):
     try:
         while True:
             data = yield
-            if not data: # if 'next' --> Retrieve value
-                to_send = value if takes_input else time.time()
-                if to_send:
-                    next_coro.send(to_send)
-            else: # if sent value --> Set value
-                value = data
+            print(f"Source received: {data}")
+            next_coro.send(data[index])
     except GeneratorExit:
         print("Exiting Coro")
 
@@ -22,6 +16,8 @@ def func_coro(func, next_coro):
     try:
         while True:
             data = yield
+            print(f"Func received: {data}")
+            print(f"func(data) = {func(data)}")
             next_coro.send(func(data))
     except GeneratorExit:
         print("Exiting Coro")

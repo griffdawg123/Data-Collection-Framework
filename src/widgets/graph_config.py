@@ -10,9 +10,8 @@ MAX_ROWS = 3
 MAX_GRAPHS = 3
 
 class GraphConfig(QDialog):
-    def __init__(self, config = {}, clients = {}) -> None:
+    def __init__(self, config = {}) -> None:
         super().__init__()
-        # self.clients = clients
         self.dm: DeviceManager = DeviceManager()
         self.data_rate = QSpinBox()
         self.data_rate.setRange(1, 100)
@@ -25,6 +24,7 @@ class GraphConfig(QDialog):
         self.remove_row_button.setDefault(False)
         self.graph_tabs: List[QTabWidget] = []
         self.graphs = []
+        self.sources = {} # Global sources for the whole application - populated by individual graph forms
         self.at_max_rows = False
         self.init_UI()
         for row in config.get("rows", []):
@@ -123,7 +123,6 @@ class GraphConfig(QDialog):
     def add_graph(self, row_tabs_widget: QTabWidget, row_idx, graph_config = {}):
         new_graph = QWidget()
         new_graph_layout = QVBoxLayout()
-        # new_graph_form = ConfigForm(graph_config, self.clients)
         new_graph_form = ConfigForm(graph_config)
         new_graph_button = QPushButton("Remove Graph")
         new_graph_layout.addWidget(new_graph_form)

@@ -7,7 +7,7 @@
 """
 import json
 from logging import Logger
-from typing import Dict
+from typing import Dict, Optional
 import os
 from bleak import BleakClient
 from src.helpers import format_config_name
@@ -102,3 +102,18 @@ class ConfigLoader():
 
     def get_title(self) -> str:
         return self.config["name"]
+
+
+def save_source(source_dict):
+    if not os.path.exists("config/sources"):
+        os.makedirs("config/sources")
+    file_name = format_config_name(source_dict["name"])
+    with open(f"config/sources/{file_name}.config", "w", encoding='utf-8') as outfile:
+        outfile.write(json.dumps(source_dict))    
+
+def load_source(source_name: str) -> Optional[Dict]:
+    file_name = format_config_name(source_name)
+    if not os.path.exists(f"config/sources/{file_name}.config"):
+        return
+    with open(f"config/sources/{file_name}.config", "r", encoding='utf-8') as infile:
+        return json.loads(infile.read())
