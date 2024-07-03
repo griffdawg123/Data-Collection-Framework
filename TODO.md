@@ -19,14 +19,10 @@
 - [ ] Graph form needs to fully reform itself correctly - So that it resaves correctly
 - [ ] Why aren't multiple notify characteristics working?
 - [ ] Change Source form to allow for choice of which Bytearray chunk to be used
+- [ ] Share sources across graphs
+- [x] Individual plot widget - Implement with coroutine method & new bit parsing
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
-- [ ] Share sources across graphs
-    - As sources are added, they are added to a global list that can be chosen from
-    - Input box with dropdown
-    - Specify sources and its parse method (float or fixed point)
-    - As they're added, we can choose these as the source along with the required chunk
-    - This is passed to the source generator
 ## Backlog
 - [ ] Ensure only my logging is used
 - [ ] JSON Schema implementation for validation
@@ -38,5 +34,3 @@
 ## Continuous Integration
 - [ ] Testing
 - [ ] Logging
-## "Done"
-- [x] Individual plot widget - Implement with coroutine method & new bit parsing
