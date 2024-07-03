@@ -4,8 +4,10 @@
 ## To Install:
 Clone the project onto your machine:
 `git clone https://github.com/griffdawg123/Data-Collection-Framework.git`
+
 Create a virtual environment:
 `python -m venv venv`
+
 Source the virtual environment:
 ```
 # Unix
