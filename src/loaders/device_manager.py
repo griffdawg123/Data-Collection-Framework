@@ -1,10 +1,8 @@
 from asyncio import Task, TaskGroup, get_event_loop
-from functools import partial
-from typing import Any, Callable, Dict, Generator, List
+from typing import Any, Callable, Dict, List
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from bleak import BleakClient
-from bleak.backends.characteristic import BleakGATTCharacteristic
 from src.loaders.config_loader import load_source
 from src.loaders.datastream_manager import DatastreamManager
 from src.loaders.singleton import Singleton

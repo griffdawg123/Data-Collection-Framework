@@ -22,11 +22,16 @@ workspace
 remains correct
 4. Add a new graph to the same row with the same parameters but rather y = cos(x)
 5. Assert that both graphs play concurrently
+6. Add a new graph to a new row with new parameters
+7. Add multiple plotlines to the same graph
 #### Managing BLE Graphs
 1. Add a new row with a single graph using a notify characteristic
     - Note: The mQn Fixed Point function can be used to decode bytearrays,
-    If not specified, simply leave n as 0 and input the length of the array
-    in m as specified by the device's firmware
+    If not specified, for an int, simply leave n as 0 and input the length of 
+    the array in m as specified by the device's firmware
+    - The bytearray can also be decoded as a float
 2. Assert that the graph plays correctly and responds to sensor input
+3. Multiple values from the same characteristic can be plotted on the same graph
+4. Multiple different characteristics can be plotted 
 
 
