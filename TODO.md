@@ -24,8 +24,15 @@
 ## In Progress
 - [ ] can construct workspace from empty file or json with missing tags
 ## Backlog
-- [ ] Ensure only my logging is used
-- [ ] JSON Schema implementation for validation
+- [ ] Remove plotline from combobox when removed from plot
+- [ ] Change label on chunk choose spinbox to "index"
+- [ ] Ensure only my logging is used 
+- [ ] JSON Schema implementation for validation 
+- [ ] Set source name from device + characteristic when creating new 
+- [ ] Have references to devices be by address rather than name (in case name changeS)
+- [ ] Have default func be identity
+- [ ] Add new source to all plotline spin boxes when created
+- [ ] Have chunk chooser spin box pull number from config
 ## Major Features (To Be Split into Tasks)
 - [ ] Multiple Device Locking - check bleak docs
 - [ ] Read Functionality for BLE
