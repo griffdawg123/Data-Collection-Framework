@@ -18,7 +18,7 @@ class DatastreamManager(metaclass=Singleton):
     def source_update(self):
         for source, value in self.values.items():
             self.datastream_manager.value_signal.emit(source, value)
-        self.datastream_manager.value_signal.emit("Time", (time(),))
+        self.datastream_manager.value_signal.emit("time", (time(),))
 
     def connect_to_signal(self, func):
         self.datastream_manager.value_signal.connect(func)
