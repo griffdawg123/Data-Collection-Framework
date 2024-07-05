@@ -1,34 +1,23 @@
 from abc import abstractmethod
 from enum import IntEnum
-import json
-import os
 import sys
-from typing import Dict, Optional
+from typing import Optional
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
-        QButtonGroup,
-        QCheckBox,
         QColorDialog,
         QComboBox,
         QDoubleSpinBox,
         QFormLayout,
-        QHBoxLayout,
         QLabel,
         QLineEdit,
         QPushButton,
-        QRadioButton,
         QSpinBox,
         QStackedWidget,
-        QVBoxLayout,
         QWidget
         )
-from bleak import BleakClient
 
 from src import helpers
-from src.ble.ble_scanner import get_services
 from src.loaders.config_loader import load_source, save_source
-from src.loaders.device_manager import DeviceManager
-from src.widgets import source_dialog
 from src.widgets.source_dialog import BLESourceDialog
 
 class ConfigForm(QWidget):
@@ -42,23 +31,19 @@ class ConfigForm(QWidget):
         # New Plotline
         self.new_plotline_edit = QLineEdit()
         self.new_plotline_edit.textChanged.connect(
-                lambda s: self.add_plotline_button.setDisabled(
-                    len(s) == 0
-                )
+                lambda s: self.add_plotline_button.setDisabled(len(s) == 0)
             )
+
         self.new_plotline_name = ""
-        # self.new_source_combo = QComboBox()
-        # self.available_sources = ["Time"] + [file_name.removesuffix(".config") for file_name in helpers.get_files("config/sources") ]
-        # self.new_source_combo.addItems(self.available_sources)
-        # self.new_source_combo.setLineEdit(self.new_source_name_edit)
         def set_plotline_name(s):
             self.new_plotline_name = s
+
         self.new_plotline_edit.textChanged.connect(set_plotline_name)        
         def new_plotline_button_clicked():
             self.add_plotline({"plotline_name": self.new_plotline_name})
+
         self.add_plotline_button = QPushButton("Add Plotline")
         self.add_plotline_button.clicked.connect(new_plotline_button_clicked)
-        # self.new_source_button.setDisabled(True)
         self.remove_plotline_button = QPushButton("Remove Plotline")
         self.remove_plotline_button.clicked.connect(self.remove_plotline)
         self.plotline_forms = {}
@@ -136,15 +121,19 @@ class ConfigForm(QWidget):
         self.plotline_config_edit_stack.setCurrentWidget(plotline_form)
 
     def remove_plotline(self):
+        print(self.plotline_forms)
         if len(self.plotline_forms) == 0:
             return
         to_remove = self.plotline_forms[self.plotline_select.currentText()]
         self.plotline_config_edit_stack.removeWidget(to_remove)
         del self.plotline_forms[self.plotline_select.currentText()]
+        self.plotline_select.removeItem(self.plotline_select.currentIndex())
+        if len(self.plotline_forms) > 0:
+            self.plotline_select.setCurrentIndex(0)
         
     def change_plotline(self):
-        print(self.plotline_forms)
-        self.plotline_config_edit_stack.setCurrentWidget(self.plotline_forms[self.plotline_select.currentText()])
+        if self.plotline_config_edit_stack.count() > 0:
+            self.plotline_config_edit_stack.setCurrentWidget(self.plotline_forms[self.plotline_select.currentText()])
 
 class PlotlineForm(QWidget):
     def __init__(self, config = {}) -> None:
